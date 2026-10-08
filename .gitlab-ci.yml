@@ -1,0 +1,57 @@
+# Builds Crafting Apps Hub on tag pushes only (e.g. `git push origin v0.2.0`).
+# GitLab.com Free: Linux + Windows hosted runners (400 compute minutes/month).
+# macOS hosted runners are Premium/Ultimate only, so there is no macOS job.
+# ponytail: no Go/bun cache; add `cache:` if builds get slow or minutes run short.
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+
+stages: [test, build]
+
+variables:
+  WAILS_VERSION: v3.0.0-beta.28
+
+# Wails' Linux webview packages need GTK4/WebKitGTK headers even for vet/test.
+.linux:
+  image: golang:1.25-trixie
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev pkg-config unzip >/dev/null
+
+# Tests + guard that the tag matches build/config.yml (the single SemVer source).
+test:
+  extends: .linux
+  stage: test
+  script:
+    - |
+      VERSION=$(grep -m1 '^  version:' build/config.yml | cut -d'"' -f2)
+      [ "$CI_COMMIT_TAG" = "v$VERSION" ] || { echo "tag $CI_COMMIT_TAG does not match build/config.yml version v$VERSION"; exit 1; }
+    - mkdir -p frontend/dist && touch frontend/dist/.keep # go:embed needs the dir; tests don't use the UI
+    - go vet ./...
+    - go test ./...
+
+build:linux:
+  extends: .linux
+  stage: build
+  script:
+    - curl -fsSL https://bun.sh/install | bash
+    - export PATH="$HOME/.bun/bin:$(go env GOPATH)/bin:$PATH"
+    - go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VERSION
+  script:
+    - wails3 build
+  artifacts:
+    name: crafting-apps-hub-$CI_COMMIT_TAG-linux-x64
+    paths: ["bin/Crafting Apps Hub"]
+
+build:windows:
+  stage: build
+  tags: [saas-windows-medium-amd64]
+  before_script:
+    - irm https://bun.sh/install.ps1 | iex
+    - $env:Path = "$env:USERPROFILE\.bun\bin;$(go env GOPATH)\bin;$env:Path"
+    - go install github.com/wailsapp/wails/v3/cmd/wails3@$env:WAILS_VERSION
+  script:
+    - wails3 build
+  artifacts:
+    name: crafting-apps-hub-$CI_COMMIT_TAG-windows-x64
+    paths: ["bin/Crafting Apps Hub.exe"]
