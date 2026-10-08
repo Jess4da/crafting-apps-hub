@@ -17,7 +17,7 @@
         PackageDisplayName="Crafting Apps Hub"
         PublisherName="CN=Crafting Apps"
         PublisherDisplayName="Crafting Apps"
-        Version="0.1.0.0"
+        Version="0.1.1.0"
         PackageDescription="A wails-crafting-apps-hub application">
         <Capabilities>
             <Capability Name="runFullTrust" />
