@@ -23,6 +23,7 @@ flowchart LR
   - Portable data: `App.Portable` names a folder an app keeps next to its exe (only PhotoCraft: `PhotoCraftData`, enabled by the `portable.txt` its Windows zip ships). Every archive has a versioned top folder, so the exe directory changes on each update. `keepPortable` moves the folder into the new tree before the swap is final. `removeInstall` keeps it at `<install dir>/<Portable>` unless clean. `findPortable` looks at depth 0 and 1. A new app that writes beside its exe MUST set `Portable`, or updates will wipe its settings.
 - `hubservice.go` (package main) embeds `*hub.Hub` so all its exported methods are bound, and adds Wails-dependent methods (`ChooseInstallRoot` dialog, `OpenInstallDir` file manager) via `application.Get()`.
 - `main.go` resolves dirs (`dirs()`), wires `emit` → `app.Event.Emit("hub:progress", p)`, and registers `application.RegisterEvent[hub.Progress]("hub:progress")` for typed TS events.
+- Portable by default: `dirs()` puts `hub-data/` (state) and `apps/` (install root) next to the hub executable, located via `os.Executable` + `EvalSymlinks` (never the working directory, so shortcuts with any "Start in" work). On macOS the base is the folder holding `.app`; for AppImage it is `$APPIMAGE`'s folder. An unwritable base (Program Files, translocated app) falls back to per-user dirs. `state.json` stores paths under the hub folder relative to it (`Hub.rel`/`Hub.abs`), so the folder can be moved or mounted under another drive letter.
 - Frontend: client-only SPA (`ssr = false`). `HubStore` (a class with `$state`/`$derived` fields) is the single store. It calls bindings, listens to `Events.On("hub:progress")`, and reports via the shared Skeleton `toaster`. The backend `AppState` is the source of truth: each mutating call returns the new `AppState`, which replaces the entry in `hub.apps`.
 
 ## Key Directories
@@ -48,7 +49,7 @@ cd frontend && bun run check                # svelte-kit sync + svelte-check (mu
 go build -tags server -o bin/hub-server . && WAILS_SERVER_PORT=8765 ./bin/hub-server
                                             # real backend + UI in a browser at :8765 (handy for UI checks)
 ```
-For smoke tests, isolate state: set `APPDATA` / `LOCALAPPDATA` (Windows) or `HOME` / `XDG_CONFIG_HOME` to a temp dir.
+For smoke tests, copy the built binary into a temp folder and run it there (its `hub-data/` and `apps/` land beside it). If that folder isn't writable, the per-user fallback applies: then set `APPDATA` / `LOCALAPPDATA` (Windows) or `HOME` / `XDG_CONFIG_HOME` to a temp dir.
 
 ## Code Conventions & Common Patterns
 - **Adding an app**: append to `hub.Catalog` (verify the asset prefix against a real release) and add `frontend/static/icons/<id>.png`. Nothing else is needed.
@@ -69,7 +70,7 @@ For smoke tests, isolate state: set `APPDATA` / `LOCALAPPDATA` (Windows) or `HOM
 - Inline one-expression helpers unless they have 3+ callers.
 
 ## Important Files
-- `main.go`: app bootstrap, `dirs()` (data dir `<UserConfigDir>/CraftingAppsHub`; install root `%LOCALAPPDATA%\Programs\CraftingApps` | `~/Applications/Crafting Apps` | `~/.local/share/crafting-apps`).
+- `main.go`: app bootstrap, `dirs()` (portable `<exe dir>/hub-data` + `<exe dir>/apps`; fallback data dir `<UserConfigDir>/CraftingAppsHub`, install root `%LOCALAPPDATA%\Programs\CraftingApps` | `~/Applications/Crafting Apps` | `~/.local/share/crafting-apps`).
 - `frontend/vite.config.ts`: plugin order `tailwindcss()`, `sveltekit({adapter})`, `wails("./bindings")`. SvelteKit config lives here (no `svelte.config.js` in Kit 3).
 - `frontend/tsconfig.json`: must extend `$app/tsconfig`.
 - `frontend/package.json`: `imports` map for `#lib/*` and `#bindings/*`.

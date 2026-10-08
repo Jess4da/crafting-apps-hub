@@ -244,6 +244,41 @@ func TestChecksumMismatchKeepsPreviousInstall(t *testing.T) {
 	}
 }
 
+// A portable hub folder (hub-data + apps side by side) keeps working after it
+// is moved, e.g. a USB stick mounted under another drive letter.
+func TestPortableFolderCanMove(t *testing.T) {
+	tmp := t.TempDir()
+	root := filepath.Join(tmp, "hub")
+	open := func(root string) *Hub {
+		h, err := New(filepath.Join(root, "hub-data"), filepath.Join(root, "apps"), func(Progress) {})
+		if err != nil {
+			t.Fatal(err)
+		}
+		h.goos, h.goarch = "windows", "amd64"
+		return h
+	}
+	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/printcraft.exe": "v1"}), "")
+	if _, err := open(root).Install(context.Background(), "pdfcraft"); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(root, "hub-data", "state.json")); strings.Contains(string(b), strings.ReplaceAll(tmp, `\`, `\\`)) {
+		t.Fatalf("state.json holds absolute paths:\n%s", b)
+	}
+
+	moved := filepath.Join(tmp, "elsewhere")
+	if err := os.Rename(root, moved); err != nil {
+		t.Fatal(err)
+	}
+	h := open(moved)
+	in := find(h.List(), "pdfcraft").Installed
+	if in == nil || !strings.HasPrefix(in.Exe, moved) {
+		t.Fatalf("after move: %+v", in)
+	}
+	if got := h.GetSettings().InstallRoot; got != filepath.Join(moved, "apps") {
+		t.Fatalf("install root %q", got)
+	}
+}
+
 func TestCleanUninstallRemovesOnlyAppData(t *testing.T) {
 	data := t.TempDir()
 	h := newTestHub(t, data)

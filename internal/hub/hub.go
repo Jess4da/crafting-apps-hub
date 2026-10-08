@@ -61,6 +61,7 @@ type state struct {
 type Hub struct {
 	emit      func(Progress)
 	statePath string
+	home      string // paths under it are persisted relative, see rel
 	goos      string
 	goarch    string
 	base      baseDirs
@@ -74,10 +75,13 @@ type Hub struct {
 
 // New loads persisted state from dataDir. defaultRoot is used for installs
 // until the user picks another folder. emit receives progress updates.
+// Paths inside dataDir's parent are stored relative to it, so a portable hub
+// folder can be moved or opened under another drive letter.
 func New(dataDir, defaultRoot string, emit func(Progress)) (*Hub, error) {
 	h := &Hub{
 		emit:      emit,
 		statePath: filepath.Join(dataDir, "state.json"),
+		home:      filepath.Dir(dataDir),
 		goos:      runtime.GOOS,
 		goarch:    runtime.GOARCH,
 		base:      userBaseDirs(runtime.GOOS),
@@ -98,6 +102,10 @@ func New(dataDir, defaultRoot string, emit func(Progress)) (*Hub, error) {
 		if h.st.Installed == nil {
 			h.st.Installed = map[string]*Installed{}
 		}
+		h.st.Settings.InstallRoot = h.abs(h.st.Settings.InstallRoot)
+		for _, in := range h.st.Installed {
+			in.Dir, in.Exe = h.abs(in.Dir), h.abs(in.Exe)
+		}
 	case !errors.Is(err, os.ErrNotExist):
 		return nil, err
 	}
@@ -115,7 +123,13 @@ func New(dataDir, defaultRoot string, emit func(Progress)) (*Hub, error) {
 
 // saveLocked writes state atomically. Caller holds h.mu.
 func (h *Hub) saveLocked() error {
-	b, err := json.MarshalIndent(h.st, "", "  ")
+	disk := state{Settings: Settings{InstallRoot: h.rel(h.st.Settings.InstallRoot)}, Installed: map[string]*Installed{}}
+	for id, in := range h.st.Installed {
+		c := *in
+		c.Dir, c.Exe = h.rel(c.Dir), h.rel(c.Exe)
+		disk.Installed[id] = &c
+	}
+	b, err := json.MarshalIndent(disk, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -124,6 +138,21 @@ func (h *Hub) saveLocked() error {
 		return err
 	}
 	return os.Rename(tmp, h.statePath)
+}
+
+// rel makes p relative to h.home when it lies inside it; others stay absolute.
+func (h *Hub) rel(p string) string {
+	if r, err := filepath.Rel(h.home, p); err == nil && filepath.IsLocal(r) {
+		return r
+	}
+	return p
+}
+
+func (h *Hub) abs(p string) string {
+	if p == "" || filepath.IsAbs(p) {
+		return p
+	}
+	return filepath.Join(h.home, p)
 }
 
 func (h *Hub) GetSettings() Settings {
