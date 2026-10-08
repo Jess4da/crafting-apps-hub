@@ -32,7 +32,7 @@ Requires Go 1.25+, [bun](https://bun.sh), [Task](https://taskfile.dev) and the `
 
 ```sh
 wails3 dev          # live dev (Vite on :9245)
-wails3 build        # bin/wails-crafting-apps-hub(.exe)
+wails3 build        # bin/Crafting Apps Hub(.exe)
 wails3 task package # installer for the current OS
 go test ./...       # backend tests
 cd frontend && bun run check

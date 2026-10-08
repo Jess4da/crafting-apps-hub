@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  APP_NAME: "wails-crafting-apps-hub"
+  APP_NAME: "Crafting Apps Hub"
   BIN_DIR: "bin"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "bun"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'

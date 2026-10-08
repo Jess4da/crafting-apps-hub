@@ -3,11 +3,11 @@ Version=1.0
 Name=Crafting Apps Hub
 Comment=Install, update and launch the Craft apps
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/wails-crafting-apps-hub %u
+Exec=/usr/local/bin/Crafting Apps Hub %u
 Terminal=false
 Type=Application
-Icon=wails-crafting-apps-hub
+Icon=Crafting Apps Hub
 Categories=Utility;
-StartupWMClass=wails-crafting-apps-hub
+StartupWMClass=Crafting Apps Hub
 
  

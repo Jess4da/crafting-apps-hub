@@ -3,7 +3,7 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "wails-crafting-apps-hub"
+name: "Crafting Apps Hub"
 arch: ${GOARCH}
 platform: "linux"
 version: "0.1.0"
@@ -17,12 +17,12 @@ license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/wails-crafting-apps-hub"
-    dst: "/usr/local/bin/wails-crafting-apps-hub"
+  - src: "./bin/Crafting Apps Hub"
+    dst: "/usr/local/bin/Crafting Apps Hub"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/wails-crafting-apps-hub.png"
-  - src: "./build/linux/wails-crafting-apps-hub.desktop"
-    dst: "/usr/share/applications/wails-crafting-apps-hub.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/Crafting Apps Hub.png"
+  - src: "./build/linux/Crafting Apps Hub.desktop"
+    dst: "/usr/share/applications/Crafting Apps Hub.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 depends:

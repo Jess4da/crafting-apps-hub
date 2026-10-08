@@ -40,7 +40,7 @@ flowchart LR
 ## Development Commands
 ```sh
 wails3 dev                                  # Go rebuild + Vite :9245 + app
-wails3 build                                # bin/wails-crafting-apps-hub(.exe)
+wails3 build                                # bin/Crafting Apps Hub(.exe)
 wails3 task package                         # platform installer
 wails3 task common:generate:bindings        # after changing any exported Go method/type on HubService or hub.Hub
 go test ./internal/...                      # backend tests (httptest fake github.com)

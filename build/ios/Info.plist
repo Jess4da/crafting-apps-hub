@@ -5,7 +5,7 @@
 		<key>CFBundleDisplayName</key>
 		<string>Crafting Apps Hub</string>
 		<key>CFBundleExecutable</key>
-		<string>wails-crafting-apps-hub</string>
+		<string>Crafting Apps Hub</string>
 		<key>CFBundleGetInfoString</key>
 		<string>Launcher for PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft and DesignCraft</string>
 		<key>CFBundleIdentifier</key>
