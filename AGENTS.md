@@ -29,8 +29,9 @@ flowchart LR
 | Path | Purpose |
 |---|---|
 | `internal/hub/` | Install/update engine + tests |
-| `frontend/src/lib/` | `hub.svelte.ts` (store, toaster, `formatBytes`), `AppCard.svelte` |
-| `frontend/src/routes/` | `+layout.svelte` (CSS + `Toast.Group`), `+page.svelte` (rail nav, grid, dialogs), `layout.css`, `+layout.ts` |
+| `frontend/src/lib/` | `hub.svelte.ts` (store, toaster, `formatBytes`), `AppCard.svelte` (one catalogue row: icon · name · version · one action + ⋯ menu) |
+| `frontend/src/routes/` | `+layout.svelte` (CSS + failure-only `Toast.Group`), `+page.svelte` (rail nav, app index, Settings, uninstall sheet), `layout.css` (fonts, semantic tokens, shared `.act`/`.more`/`.menu`), `atelier.css` (Skeleton theme palette), `+layout.ts` |
+| `.hallmark/log.json` | Hallmark design-run memory (macrostructure/theme history); keep it when redesigning |
 | `frontend/static/icons/` | `<app id>.png` icons copied from each repo's `assets/app-icon/hicolor/256x256` (MIT/Apache, see `LICENSE.txt`) |
 | `frontend/bindings/` | **Generated**; never hand-edit |
 | `build/` | Taskfiles per platform, installer assets, `config.yml` |
@@ -56,8 +57,14 @@ For smoke tests, isolate state: set `APPDATA` / `LOCALAPPDATA` (Windows) or `HOM
 - **Context**: long calls take `ctx context.Context` first. Wails cancels it when the JS `CancellablePromise` is cancelled.
 - **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `onclick=`). Skeleton components use the composed pattern plus the data-in/event-out pattern (`open` + `onOpenChange`), not `bind:`.
 - **Imports**: SvelteKit 3 has no `$lib`. Use package.json subpath imports with explicit extensions: `#lib/hub.svelte.ts`, `#bindings/craftinghub/index.ts`, `#bindings/craftinghub/internal/hub/models.ts`.
-- **Icons**: per-icon imports, `import PlayIcon from "@lucide/svelte/icons/play"`, sized with `class="size-4"`.
-- **Styling**: Tailwind utilities + Skeleton classes (`btn`, `btn-icon`, `card`, `badge`, `preset-filled-*-500`, `preset-tonal`, `field-group`, `input`, `h1`–`h6`, `bg-surface-50-950`). Theme is `cerberus` (`data-theme` on `<html>`). Dark mode uses the `.dark` class (custom variant in `layout.css`) and is persisted in `localStorage.mode`.
+- **Icons**: per-icon Lucide imports, `import EllipsisIcon from "@lucide/svelte/icons/ellipsis"`, sized with `class="size-4"`. The UI is mostly typographic, so use icons only where text can't do the job.
+- **Design system (Hallmark, editorial / Index-First)**: the app is a printed-catalogue index, not a card grid. Each app is a hairline-separated row with **one** primary action (`Install` / `Open` / `Update`). Secondary actions (folder, release notes, uninstall) live in the row's Skeleton `Menu`. Keep that shape.
+  - Fonts are self-hosted (`@fontsource*`, works offline): `--font-display` Fraunces for headings and app names, `--font-body` IBM Plex Sans, `--font-mono` IBM Plex Mono **only** for version numbers, counts and paths. No other faces, and headings are never italic.
+  - Colour: every value comes from a token. The Skeleton palette is in `routes/atelier.css` (`data-theme="atelier"`: warm oat surface hue 70, oxblood primary hue 25). Semantic tokens in `layout.css` cover `--color-paper`, `-ink`, `-muted`, `-rule`, `-accent` (text), `-accent-fill` (+`-accent-ink`), `-danger`, `-danger-fill`, `-warn-text`, `-focus`, and have `.dark` overrides. Never write raw hex or oklch in components; add a token instead. Accent stays under about 5% of the view: updates, the active filter underline, the update count.
+  - Buttons: `.act` is an outlined ink pill whose colour inverts instantly on hover; `.act--accent` (update), `.act--danger` (destructive confirm), `.act--quiet`. Button labels never wrap; shorten them instead.
+  - Feedback: success is silent (the row updates itself). `toaster` is for failures only.
+  - Paper (light) is the default; `.dark` ("Ink mode") is opt-in, persisted in `localStorage.mode`.
+  - Verify at 320/375/414/768 px: no horizontal scroll, no wrapped button labels, app name never overlaps the action. Below 48rem the rail becomes one scrollable row.
 - Skeleton docs for LLMs: https://www.skeleton.dev/llms-svelte.txt (v5 renamed classes, e.g. `input-group` → `field-group`).
 - Inline one-expression helpers unless they have 3+ callers.
 

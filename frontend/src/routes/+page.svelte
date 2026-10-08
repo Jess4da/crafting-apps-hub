@@ -1,17 +1,9 @@
 <script lang="ts">
+  /* Hallmark · genre: editorial · macrostructure: Index-First · nav: N9 rail · footer: Ft2 inline
+   * Styles here reference tokens from routes/layout.css + routes/atelier.css only. */
   import { onMount } from "svelte";
-  import { Dialog, Navigation, Portal } from "@skeletonlabs/skeleton-svelte";
-  import LayoutGridIcon from "@lucide/svelte/icons/layout-grid";
-  import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
-  import ArrowUpCircleIcon from "@lucide/svelte/icons/circle-arrow-up";
-  import SettingsIcon from "@lucide/svelte/icons/settings";
-  import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
+  import { Dialog, Portal } from "@skeletonlabs/skeleton-svelte";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import SunIcon from "@lucide/svelte/icons/sun";
-  import MoonIcon from "@lucide/svelte/icons/moon";
-  import XIcon from "@lucide/svelte/icons/x";
-  import FolderCogIcon from "@lucide/svelte/icons/folder-cog";
-  import PackageOpenIcon from "@lucide/svelte/icons/package-open";
   import type { AppState } from "#bindings/craftinghub/internal/hub/models.ts";
   import AppCard from "#lib/AppCard.svelte";
   import { hub } from "#lib/hub.svelte.ts";
@@ -19,7 +11,7 @@
   type View = "all" | "installed" | "updates" | "settings";
   let view = $state<View>("all");
   let query = $state("");
-  let dark = $state(true);
+  let dark = $state(false);
   let uninstallApp = $state<AppState | null>(null);
   let cleanUninstall = $state(false);
 
@@ -30,13 +22,26 @@
   );
 
   const nav = $derived([
-    { id: "all" as const, label: "Library", icon: LayoutGridIcon, count: hub.apps.length },
-    { id: "installed" as const, label: "Installed", icon: HardDriveIcon, count: hub.installed.length },
-    { id: "updates" as const, label: "Updates", icon: ArrowUpCircleIcon, count: hub.updates.length },
+    { id: "all" as const, label: "All apps", count: hub.apps.length },
+    { id: "installed" as const, label: "Installed", count: hub.installed.length },
+    { id: "updates" as const, label: "Updates", count: hub.updates.length },
   ]);
 
-  const animation =
-    "transition transition-discrete opacity-0 translate-y-4 starting:data-[state=open]:opacity-0 starting:data-[state=open]:translate-y-4 data-[state=open]:opacity-100 data-[state=open]:translate-y-0";
+  // The index header: a count line, not a slogan.
+  const heading = $derived(
+    view === "installed"
+      ? "On this computer"
+      : view === "updates"
+        ? "Updates"
+        : "The Craft apps",
+  );
+  const summary = $derived.by(() => {
+    const n = hub.apps.length;
+    const i = hub.installed.length;
+    const u = hub.updates.length;
+    if (!n) return "";
+    return [`${n} apps`, `${i} installed`, u ? `${u} with updates` : "all current"].join(" · ");
+  });
 
   onMount(() => {
     dark = document.documentElement.classList.contains("dark");
@@ -50,91 +55,86 @@
   }
 </script>
 
-<div class="h-full grid grid-cols-[auto_1fr]">
-  <Navigation layout="rail" class="border-r border-surface-200-800">
-    <Navigation.Header>
-      <img src="/icons/photocraft.png" alt="Crafting Apps Hub" class="size-10 rounded-lg mx-auto my-2" />
-    </Navigation.Header>
-    <Navigation.Content>
-      <Navigation.Menu>
-        {#each nav as item (item.id)}
-          {@const Icon = item.icon}
-          <Navigation.Trigger
-            onclick={() => (view = item.id)}
+<div class="shell">
+  <nav class="rail" aria-label="Library">
+    <p class="wordmark">Craft<span>Hub</span></p>
+    <div class="rail__strip">
+    <ul class="rail__list">
+      {#each nav as item (item.id)}
+        <li>
+          <button
+            type="button"
+            class="rail__link"
             aria-current={view === item.id ? "page" : undefined}
-            class="relative {view === item.id ? 'preset-filled-primary-500' : ''}"
+            onclick={() => (view = item.id)}
           >
-            <Icon class="size-5" />
-            <Navigation.TriggerText>{item.label}</Navigation.TriggerText>
-            {#if item.id === "updates" && item.count}
-              <span class="badge-icon preset-filled-warning-500 absolute top-1 right-1 size-5 text-xs">{item.count}</span>
-            {/if}
-          </Navigation.Trigger>
-        {/each}
-      </Navigation.Menu>
-    </Navigation.Content>
-    <Navigation.Footer>
-      <Navigation.Trigger onclick={toggleMode} title="Toggle light/dark" aria-label="Toggle light or dark mode">
-        {#if dark}<SunIcon class="size-5" />{:else}<MoonIcon class="size-5" />{/if}
-      </Navigation.Trigger>
-      <Navigation.Trigger
-        onclick={() => (view = "settings")}
-        title="Settings"
-        aria-label="Settings"
-        aria-current={view === "settings" ? "page" : undefined}
-        class={view === "settings" ? "preset-filled-primary-500" : ""}
-      >
-        <SettingsIcon class="size-5" />
-      </Navigation.Trigger>
-    </Navigation.Footer>
-  </Navigation>
+            <span>{item.label}</span>
+            {#if item.count}<span class="rail__count" data-accent={item.id === "updates"}>{item.count}</span>{/if}
+          </button>
+        </li>
+      {/each}
+    </ul>
+    <ul class="rail__list rail__foot">
+      <li>
+        <button type="button" class="rail__link" aria-current={view === "settings" ? "page" : undefined} onclick={() => (view = "settings")}>
+          Settings
+        </button>
+      </li>
+      <li>
+        <button type="button" class="rail__link rail__mode" onclick={toggleMode} aria-pressed={dark}>
+          {dark ? "Paper" : "Ink"} mode
+        </button>
+      </li>
+    </ul>
+    </div>
+  </nav>
 
-  <main class="overflow-y-auto">
+  <main class="page">
     {#if view === "settings"}
-      <section class="max-w-2xl p-8 space-y-6">
-        <h1 class="h3">Settings</h1>
-        <div class="card preset-filled-surface-100-900 border border-surface-200-800 p-5 space-y-3">
-          <h2 class="h6 flex items-center gap-2"><FolderCogIcon class="size-5" />Install folder</h2>
-          <p class="text-sm opacity-70">
-            New installs go here. Apps already installed stay where they are; reinstall to move them.
-          </p>
-          <div class="flex gap-2">
-            <input class="input flex-1 font-mono text-sm" readonly value={hub.settings.installRoot} aria-label="Install folder" />
-            <button type="button" class="btn preset-tonal" onclick={() => hub.chooseInstallRoot()}>Change…</button>
-          </div>
-        </div>
-        <div class="card preset-filled-surface-100-900 border border-surface-200-800 p-5 space-y-2 text-sm">
-          <h2 class="h6">About</h2>
-          <p class="opacity-70">
-            Platform <code class="code">{hub.platform}</code>. Apps are downloaded from their GitHub releases, verified
-            against the published <code class="code">SHA256SUMS.txt</code>, and installed per-user (no admin rights).
-          </p>
+      <header class="head">
+        <h1 class="head__title">Settings</h1>
+      </header>
+      <section class="setting">
+        <h2 class="setting__name">Install folder</h2>
+        <p class="setting__hint">New installs go here. Apps already installed stay where they are.</p>
+        <div class="setting__row">
+          <code class="path">{hub.settings.installRoot}</code>
+          <button type="button" class="act" onclick={() => hub.chooseInstallRoot()}>Change</button>
         </div>
       </section>
+      <section class="setting">
+        <h2 class="setting__name">How apps are installed</h2>
+        <p class="setting__hint">
+          Each app comes from its GitHub release, is checked against the release’s published SHA-256 sums, and is installed
+          for your user only — no administrator rights. This computer gets the <code class="path path--inline">{hub.platform}</code>
+          builds.
+        </p>
+      </section>
     {:else}
-      <header class="sticky top-0 z-10 bg-surface-50-950/90 backdrop-blur border-b border-surface-200-800 px-8 py-4 flex flex-wrap items-center gap-4">
-        <div class="flex-1 min-w-48">
-          <h1 class="h4">{nav.find((n) => n.id === view)?.label}</h1>
-          <p class="text-sm opacity-60">
-            {hub.installed.length} of {hub.apps.length} installed{hub.updates.length ? ` · ${hub.updates.length} update${hub.updates.length > 1 ? "s" : ""} available` : ""}
-          </p>
+      <header class="head">
+        <div class="head__text">
+          <h1 class="head__title">{heading}</h1>
+          <p class="head__summary">{summary}</p>
         </div>
-        <div class="field-group grid-cols-[auto_1fr] w-64">
-          <label class="label label-text preset-tonal" for="search" aria-label="Search"><SearchIcon class="size-4" /></label>
-          <input class="input" id="search" type="search" placeholder="Search apps" bind:value={query} />
-        </div>
-        {#if hub.updates.length > 1}
-          <button type="button" class="btn preset-filled-warning-500" disabled={Object.keys(hub.busy).length > 0} onclick={() => hub.updateAll()}>
-            <ArrowUpCircleIcon class="size-4" />Update all
+        <div class="head__tools">
+          <label class="search">
+            <SearchIcon class="size-4" aria-hidden="true" />
+            <span class="sr-only">Search apps</span>
+            <input type="search" placeholder="Search" bind:value={query} />
+          </label>
+          {#if view === "updates" && hub.updates.length > 1}
+            <button type="button" class="act act--accent" disabled={Object.keys(hub.busy).length > 0} onclick={() => hub.updateAll()}>
+              Update all
+            </button>
+          {/if}
+          <button type="button" class="act" disabled={hub.refreshing} onclick={() => hub.refresh()}>
+            {hub.refreshing ? "Checking" : "Check now"}
           </button>
-        {/if}
-        <button type="button" class="btn preset-tonal" disabled={hub.refreshing} onclick={() => hub.refresh()}>
-          <RefreshCwIcon class="size-4 {hub.refreshing ? 'animate-spin' : ''}" />Check for updates
-        </button>
+        </div>
       </header>
 
       {#if shown.length}
-        <div class="grid gap-5 p-8 grid-cols-[repeat(auto-fill,minmax(19rem,1fr))]">
+        <ul class="index">
           {#each shown as app (app.id)}
             <AppCard
               {app}
@@ -144,54 +144,60 @@
               }}
             />
           {/each}
-        </div>
+        </ul>
       {:else}
-        <div class="flex flex-col items-center justify-center gap-3 py-24 opacity-70">
-          <PackageOpenIcon class="size-12" />
-          <p>
-            {query ? "No apps match your search." : view === "updates" ? "Everything is up to date." : "No apps installed yet."}
+        <div class="empty">
+          <p class="empty__title">
+            {query ? `Nothing matches “${query.trim()}”.` : view === "updates" ? "Everything is current." : "Nothing installed yet."}
           </p>
-          {#if view !== "all" && !query}
-            <button type="button" class="btn preset-tonal" onclick={() => (view = "all")}>Browse library</button>
+          {#if query}
+            <button type="button" class="act" onclick={() => (query = "")}>Clear search</button>
+          {:else if view !== "all"}
+            <button type="button" class="act" onclick={() => (view = "all")}>See all apps</button>
           {/if}
         </div>
       {/if}
     {/if}
+
+    <footer class="foot">
+      <span>Installs to <code class="path path--inline">{hub.settings.installRoot}</code></span>
+      <span>{hub.platform}</span>
+    </footer>
   </main>
 </div>
 
 <!-- Uninstall confirmation -->
 <Dialog role="alertdialog" open={!!uninstallApp} onOpenChange={(e) => !e.open && (uninstallApp = null)}>
   <Portal>
-    <Dialog.Backdrop class="fixed inset-0 z-50 bg-surface-50-950/60" />
-    <Dialog.Positioner class="fixed inset-0 z-50 flex justify-center items-center p-6">
-      <Dialog.Content class="card bg-surface-100-900 w-full max-w-md p-5 space-y-4 shadow-xl {animation}">
-        <Dialog.Title class="h5">
+    <Dialog.Backdrop class="sheet__backdrop" />
+    <Dialog.Positioner class="sheet__pos">
+      <Dialog.Content class="sheet">
+        <Dialog.Title class="sheet__title">
           {uninstallApp?.installed ? `Uninstall ${uninstallApp.name}?` : `Remove ${uninstallApp?.name} settings?`}
         </Dialog.Title>
-        <Dialog.Description class="text-sm opacity-80 space-y-2">
+        <Dialog.Description class="sheet__body">
           {#if uninstallApp?.installed}
             <p>Removes the program files in</p>
-            <code class="code block break-all whitespace-normal">{uninstallApp.installed.dir}</code>
+            <code class="path">{uninstallApp.installed.dir}</code>
           {/if}
-          <p>Your documents are not affected. Settings are kept for a later reinstall unless you tick the box below.</p>
+          <p>Your documents are not touched. Settings stay for a later reinstall unless you tick the box.</p>
         </Dialog.Description>
         {#if uninstallApp?.dataDirs.length}
-          <label class="flex items-start gap-2 text-sm">
-            <input class="checkbox mt-0.5" type="checkbox" bind:checked={cleanUninstall} disabled={!uninstallApp.installed} />
+          <label class="sheet__check">
+            <input class="checkbox" type="checkbox" bind:checked={cleanUninstall} disabled={!uninstallApp.installed} />
             <span class="min-w-0">
               Also delete settings, recovery files and caches
-              <ul class="mt-1 space-y-0.5 text-xs opacity-70">
-                {#each uninstallApp.dataDirs as d (d)}<li><code class="code block break-all whitespace-normal">{d}</code></li>{/each}
+              <ul class="sheet__paths">
+                {#each uninstallApp.dataDirs as d (d)}<li><code class="path">{d}</code></li>{/each}
               </ul>
             </span>
           </label>
         {/if}
-        <footer class="flex justify-end gap-2">
-          <Dialog.CloseTrigger class="btn preset-tonal">Cancel</Dialog.CloseTrigger>
+        <footer class="sheet__actions">
+          <Dialog.CloseTrigger class="act act--quiet">Cancel</Dialog.CloseTrigger>
           <button
             type="button"
-            class="btn preset-filled-error-500"
+            class="act act--danger"
             onclick={() => {
               const a = uninstallApp;
               uninstallApp = null;
@@ -203,3 +209,347 @@
     </Dialog.Positioner>
   </Portal>
 </Dialog>
+
+<style>
+  .shell {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* N9 · edge-aligned rail: wordmark + plain text filters, no icons, no fills. */
+  .rail {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    padding: 2rem 1.25rem 1.5rem 1.75rem;
+    border-right: 1px solid var(--color-rule);
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-variation-settings: "opsz" 72, "SOFT" 50;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+  }
+  .wordmark span {
+    font-weight: 300;
+  }
+  .rail__list {
+    display: grid;
+    gap: 0.125rem;
+  }
+  .rail__foot {
+    margin-top: auto;
+  }
+  .rail__strip {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+  .rail__link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.4375rem 0.5rem;
+    margin-inline: -0.5rem;
+    border-radius: 0.25rem;
+    color: var(--color-muted);
+    text-align: left;
+    white-space: nowrap;
+    transition: color var(--dur-short) var(--ease-out);
+  }
+  .rail__link[aria-current="page"] {
+    color: var(--color-ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.35em;
+  }
+  @media (hover: hover) {
+    .rail__link:hover {
+      color: var(--color-ink);
+    }
+  }
+  .rail__count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .rail__count[data-accent="true"] {
+    color: var(--color-accent);
+  }
+
+  .page {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 2.5rem clamp(1.25rem, 4vw, 4rem) 1.5rem;
+  }
+
+  /* Index-First header: title + count line on the left, tools hard right. */
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+  .head__text {
+    min-width: 0;
+  }
+  .head__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 2.5vw + 1rem, 3rem);
+    font-weight: 600;
+    font-variation-settings: "opsz" 144;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--color-ink);
+    overflow-wrap: anywhere;
+  }
+  .head__summary {
+    margin-top: 0.5rem;
+    color: var(--color-muted);
+    font-size: 0.9375rem;
+  }
+  .head__tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding-inline: 0.875rem;
+    border: 1px solid var(--color-rule-2);
+    border-radius: 999px;
+    color: var(--color-muted);
+    transition: background-color var(--dur-short) var(--ease-out);
+  }
+  .search:focus-within {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+  }
+  @media (hover: hover) {
+    .search:hover {
+      background: var(--color-paper-2);
+    }
+  }
+  .search input {
+    width: 9rem;
+    background: transparent;
+    border: 0;
+    outline: none;
+    padding: 0;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+  }
+  .search input::placeholder {
+    color: var(--color-muted);
+  }
+
+  .index {
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .empty {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    padding-block: 4rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .empty__title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--color-ink);
+  }
+
+  .setting {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 44rem;
+    padding-block: 1.5rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .setting__name {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .setting__hint {
+    max-width: 62ch;
+    color: var(--color-muted);
+  }
+  .setting__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .path {
+    display: block;
+    padding: 0.375rem 0.625rem;
+    border-radius: 0.25rem;
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .path--inline {
+    display: inline;
+    padding: 0.0625rem 0.3125rem;
+  }
+
+  /* Ft2 · one quiet line closing the page. */
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    margin-top: auto;
+    padding-top: 3rem;
+    color: var(--color-muted);
+    font-size: 0.8125rem;
+  }
+
+  /* Dialog: a paper sheet, not a floating card. */
+  :global(.sheet__backdrop) {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: var(--color-backdrop);
+  }
+  :global(.sheet__pos) {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+  :global(.sheet) {
+    display: grid;
+    gap: 1.25rem;
+    width: min(100%, 30rem);
+    padding: 1.75rem;
+    border: 1px solid var(--color-rule-2);
+    border-radius: 0.5rem;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow: 0 1px 2px var(--color-shadow);
+  }
+  :global(.sheet__title) {
+    font-family: var(--font-display);
+    font-size: 1.625rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+  }
+  :global(.sheet__body) {
+    display: grid;
+    gap: 0.5rem;
+    color: var(--color-muted);
+    font-size: 0.9375rem;
+  }
+  .sheet__check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
+  }
+  .sheet__check input {
+    margin-top: 0.1875rem;
+    accent-color: var(--color-accent);
+  }
+  .sheet__paths {
+    display: grid;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  .sheet__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  :global(.act--danger) {
+    border-color: var(--color-danger-fill);
+    background: var(--color-danger-fill);
+    color: var(--color-danger-ink);
+  }
+  @media (hover: hover) {
+    :global(.act--danger:hover) {
+      background: var(--color-ink);
+      border-color: var(--color-ink);
+    }
+  }
+
+  /* Narrow: rail becomes a top strip; filters stay one line. */
+  @media (max-width: 48rem) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .rail {
+      position: static;
+      height: auto;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem 0;
+      border-right: 0;
+      border-bottom: 1px solid var(--color-rule);
+    }
+    /* One scrollable strip of filters + Settings: never wraps to a lonely row. */
+    .rail__list,
+    .rail__foot {
+      display: contents;
+    }
+    .rail__strip {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 1.25rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 0.75rem;
+    }
+    .rail__strip li {
+      flex: none;
+    }
+    .rail__link {
+      width: auto;
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+    .rail__mode {
+      display: none;
+    }
+    .head__tools {
+      width: 100%;
+    }
+    .search {
+      flex: 1;
+    }
+    .search input {
+      width: 100%;
+    }
+  }
+</style>

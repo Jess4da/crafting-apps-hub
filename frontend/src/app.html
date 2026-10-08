@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="cerberus" class="dark">
+<html lang="en" data-theme="atelier">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/icons/photocraft.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crafting Apps Hub</title>
     <script>
-      // Apply saved mode before paint to avoid a flash.
-      if (localStorage.getItem("mode") === "light") document.documentElement.classList.remove("dark");
+      // Paper (light) is the default; apply a saved dark preference before paint.
+      if (localStorage.getItem("mode") === "dark") document.documentElement.classList.add("dark");
     </script>
     %sveltekit.head%
   </head>

@@ -33,9 +33,7 @@ class HubStore {
   async refresh() {
     this.refreshing = true;
     try {
-      this.apps = await HubService.Refresh();
-      const failed = this.apps.find((a) => a.error);
-      if (failed) toaster.warning({ title: "Couldn't check some apps", description: failed.error });
+      this.apps = await HubService.Refresh(); // per-app check errors render in each row
     } catch (e) {
       toaster.error({ title: "Refresh failed", description: String(e) });
     } finally {
@@ -43,13 +41,13 @@ class HubStore {
     }
   }
 
+  // Success is silent: the row itself shows the new version (or the Install
+  // button again). Toasts are reserved for failures.
   async install(app: AppState) {
-    const verb = app.installed ? "Updated" : "Installed";
     this.busy[app.id] = "install";
     try {
       const s = await HubService.Install(app.id);
       this.apps = this.apps.map((a) => (a.id === s.id ? s : a));
-      toaster.success({ title: `${verb} ${s.name}`, description: `Version ${s.installed?.version}` });
     } catch (e) {
       toaster.error({ title: `${app.name} failed`, description: errText(e) });
     } finally {
@@ -68,7 +66,6 @@ class HubStore {
     try {
       const s = await HubService.Uninstall(app.id, clean);
       this.apps = this.apps.map((a) => (a.id === s.id ? s : a));
-      toaster.info({ title: clean ? `Removed ${app.name} and its settings` : `Removed ${app.name}` });
     } catch (e) {
       toaster.error({ title: `Couldn't fully remove ${app.name}`, description: errText(e) });
       this.apps = await HubService.List(); // a partial removal may have happened
