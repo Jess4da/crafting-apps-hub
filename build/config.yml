@@ -10,7 +10,7 @@ info:
   productIdentifier: "com.craftingapps.hub" # The unique product identifier
   description: "Install, update and launch the Craft apps" # The application description
   copyright: "(c) 2026, Jessada Duangpanyasawang" # Copyright text
-  comments: "Launcher for PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft and DesignCraft" # Comments
+  comments: "Launcher for the storytold Craft apps: PhotoCraft, LightCraft, VectorCraft, DesignCraft, CADCraft, FilmCraft, EffectCraft, SoundCraft, WordCraft, GridCraft, DeckCraft and PdfCraft" # Comments
   version: "0.1.0" # The application version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension

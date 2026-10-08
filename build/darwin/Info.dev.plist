@@ -5,7 +5,7 @@
 		<key>CFBundleExecutable</key>
 		<string>Crafting Apps Hub</string>
 		<key>CFBundleGetInfoString</key>
-		<string>Launcher for PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft and DesignCraft</string>
+		<string>Launcher for the storytold Craft apps: PhotoCraft, LightCraft, VectorCraft, DesignCraft, CADCraft, FilmCraft, EffectCraft, SoundCraft, WordCraft, GridCraft, DeckCraft and PdfCraft</string>
 		<key>CFBundleIconFile</key>
 		<string>icons</string>
 		<key>CFBundleIconName</key>

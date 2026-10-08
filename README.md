@@ -1,16 +1,21 @@
 # Crafting Apps Hub
 
-Desktop launcher that installs, updates, uninstalls and launches the Craft apps:
+Desktop launcher that installs, updates, uninstalls and launches the Craft apps, grouped as in the hub:
 
-| App | Repo | Replaces |
-|---|---|---|
-| PhotoCraft | [storytold/photocraft](https://github.com/storytold/photocraft) | Photoshop |
-| VectorCraft | [storytold/vectorcraft](https://github.com/storytold/vectorcraft) | Illustrator |
-| FilmCraft | [storytold/filmcraft](https://github.com/storytold/filmcraft) | Premiere Pro |
-| LightCraft | [storytold/lightcraft](https://github.com/storytold/lightcraft) | Lightroom |
-| PdfCraft | [storytold/pdfcraft](https://github.com/storytold/pdfcraft) | Acrobat |
-| EffectCraft | [storytold/effectcraft](https://github.com/storytold/effectcraft) | After Effects |
-| DesignCraft | [storytold/designcraft](https://github.com/storytold/designcraft) | InDesign |
+| Group | App | Repo | Replaces |
+|---|---|---|---|
+| Creative | PhotoCraft | [storytold/photocraft](https://github.com/storytold/photocraft) | Photoshop |
+| Creative | LightCraft | [storytold/lightcraft](https://github.com/storytold/lightcraft) | Lightroom |
+| Creative | VectorCraft | [storytold/vectorcraft](https://github.com/storytold/vectorcraft) | Illustrator |
+| Creative | DesignCraft | [storytold/designcraft](https://github.com/storytold/designcraft) | InDesign |
+| Creative | FilmCraft | [storytold/filmcraft](https://github.com/storytold/filmcraft) | Premiere Pro |
+| Creative | EffectCraft | [storytold/effectcraft](https://github.com/storytold/effectcraft) | After Effects |
+| Creative | PdfCraft | [storytold/pdfcraft](https://github.com/storytold/pdfcraft) | Acrobat |
+| Office | WordCraft | [storytold/wordcraft](https://github.com/storytold/wordcraft) | Word |
+| Office | GridCraft | [storytold/gridcraft](https://github.com/storytold/gridcraft) | Excel |
+| Office | DeckCraft | [storytold/deckcraft](https://github.com/storytold/deckcraft) | PowerPoint |
+| Etc. | SoundCraft | [storytold/soundcraft](https://github.com/storytold/soundcraft) | Pro Tools |
+| Etc. | CADCraft | [storytold/cadcraft](https://github.com/storytold/cadcraft) | AutoCAD |
 
 How it works:
 - Finds each repo's latest release without GitHub's REST API, so there is no 60-requests/hour limit and no token is needed. The `github.com/storytold/<app>/releases/latest` redirect gives the version. The release's `SHA256SUMS.txt` lists the files and their checksums. The hub then picks the portable build for this OS/arch: Windows `*-portable.zip`, Linux/FreeBSD `*.tar.gz`, macOS `*-macos-universal.dmg`. The release-notes button opens the release page on GitHub.
@@ -41,4 +46,4 @@ cd frontend && bun run check
 ## Credits
 
 - Crafting Apps Hub by [Jessada Duangpanyasawang](https://meatchopper.xyz/portfolio).
-- PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft and DesignCraft, including their icons, by the ArtCraft Team and contributors at [storytold](https://github.com/storytold). Each app is licensed MIT OR Apache-2.0. This hub only downloads their official releases.
+- All Craft apps listed above, including their icons, by the ArtCraft Team and contributors at [storytold](https://github.com/storytold). Each app is licensed MIT OR Apache-2.0. This hub only downloads their official releases.

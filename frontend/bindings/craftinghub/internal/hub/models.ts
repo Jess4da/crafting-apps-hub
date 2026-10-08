@@ -13,6 +13,7 @@ export class AppState {
     "name": string;
     "repo": string;
     "asset": string;
+    "group": string;
     "category": string;
     "description": string;
     "installed": Installed | null;
@@ -45,6 +46,9 @@ export class AppState {
         }
         if (!("asset" in $$source)) {
             this["asset"] = "";
+        }
+        if (!("group" in $$source)) {
+            this["group"] = "";
         }
         if (!("category" in $$source)) {
             this["category"] = "";
@@ -84,14 +88,14 @@ export class AppState {
      * Creates a new AppState instance from a string or object.
      */
     static createFrom($$source: any = {}): AppState {
-        const $$createField6_0 = $$createType1;
-        const $$createField13_0 = $$createType2;
+        const $$createField7_0 = $$createType1;
+        const $$createField14_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("installed" in $$parsedSource) {
-            $$parsedSource["installed"] = $$createField6_0($$parsedSource["installed"]);
+            $$parsedSource["installed"] = $$createField7_0($$parsedSource["installed"]);
         }
         if ("dataDirs" in $$parsedSource) {
-            $$parsedSource["dataDirs"] = $$createField13_0($$parsedSource["dataDirs"]);
+            $$parsedSource["dataDirs"] = $$createField14_0($$parsedSource["dataDirs"]);
         }
         return new AppState($$parsedSource as Partial<AppState>);
     }

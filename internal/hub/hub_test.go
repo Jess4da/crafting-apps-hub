@@ -27,11 +27,11 @@ func rel(tag string, names ...string) Release {
 
 func TestPickAsset(t *testing.T) {
 	full := rel("v0.3.0",
-		"printcraft-0.3.0-windows-x64-portable.zip", "printcraft-0.3.0-windows-x64.msi",
-		"printcraft-0.3.0-windows-arm64-portable.zip", "printcraft-0.3.0-windows-x86-portable.zip",
-		"printcraft-0.3.0-linux-x86_64.tar.gz", "printcraft-0.3.0-linux-aarch64.tar.gz",
-		"printcraft-0.3.0-linux-x86_64.deb", "printcraft-0.3.0-macos-universal.dmg",
-		"printcraft-cli-0.3.0-macos-universal.zip",
+		"pdfcraft-0.3.0-windows-x64-portable.zip", "pdfcraft-0.3.0-windows-x64.msi",
+		"pdfcraft-0.3.0-windows-arm64-portable.zip", "pdfcraft-0.3.0-windows-x86-portable.zip",
+		"pdfcraft-0.3.0-linux-x86_64.tar.gz", "pdfcraft-0.3.0-linux-aarch64.tar.gz",
+		"pdfcraft-0.3.0-linux-x86_64.deb", "pdfcraft-0.3.0-macos-universal.dmg",
+		"pdfcraft-cli-0.3.0-macos-universal.zip",
 	)
 	noArm := rel("v0.2.1", "x-0.2.1-windows-x64-portable.zip")
 	cases := []struct {
@@ -39,14 +39,14 @@ func TestPickAsset(t *testing.T) {
 		prefix, os string
 		arch, want string
 	}{
-		{full, "printcraft", "windows", "amd64", "printcraft-0.3.0-windows-x64-portable.zip"},
-		{full, "printcraft", "windows", "arm64", "printcraft-0.3.0-windows-arm64-portable.zip"},
-		{full, "printcraft", "windows", "386", "printcraft-0.3.0-windows-x86-portable.zip"},
-		{full, "printcraft", "linux", "amd64", "printcraft-0.3.0-linux-x86_64.tar.gz"},
-		{full, "printcraft", "linux", "arm64", "printcraft-0.3.0-linux-aarch64.tar.gz"},
-		{full, "printcraft", "darwin", "arm64", "printcraft-0.3.0-macos-universal.dmg"},
+		{full, "pdfcraft", "windows", "amd64", "pdfcraft-0.3.0-windows-x64-portable.zip"},
+		{full, "pdfcraft", "windows", "arm64", "pdfcraft-0.3.0-windows-arm64-portable.zip"},
+		{full, "pdfcraft", "windows", "386", "pdfcraft-0.3.0-windows-x86-portable.zip"},
+		{full, "pdfcraft", "linux", "amd64", "pdfcraft-0.3.0-linux-x86_64.tar.gz"},
+		{full, "pdfcraft", "linux", "arm64", "pdfcraft-0.3.0-linux-aarch64.tar.gz"},
+		{full, "pdfcraft", "darwin", "arm64", "pdfcraft-0.3.0-macos-universal.dmg"},
 		{noArm, "x", "windows", "arm64", "x-0.2.1-windows-x64-portable.zip"}, // x64 emulation fallback
-		{full, "printcraft", "freebsd", "amd64", ""},                         // not in this release
+		{full, "pdfcraft", "freebsd", "amd64", ""},                           // not in this release
 		{full, "photocraft", "windows", "amd64", ""},                         // wrong prefix
 	}
 	for _, c := range cases {
@@ -119,7 +119,7 @@ func writeZip(t *testing.T, path string, files map[string]string) []byte {
 // fakeGitHub serves a PdfCraft release from a fake github.com. sum overrides
 // the checksum file contents ("" = correct sum).
 func fakeGitHub(t *testing.T, version string, zipBytes []byte, sum string) *fakeGH {
-	return fakeRelease(t, "pdfcraft", "printcraft", version, zipBytes, sum)
+	return fakeRelease(t, "pdfcraft", "pdfcraft", version, zipBytes, sum)
 }
 
 type fakeGH struct{ heads, sums atomic.Int32 }
@@ -177,7 +177,7 @@ func TestInstallUpdateUninstall(t *testing.T) {
 	h := newTestHub(t, data)
 	ctx := context.Background()
 
-	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"printcraft-0.1.0-windows-x64-portable/printcraft.exe": "v1"}), "")
+	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"pdfcraft-0.1.0-windows-x64-portable/pdfcraft.exe": "v1"}), "")
 	s, err := h.Install(ctx, "pdfcraft")
 	if err != nil {
 		t.Fatal(err)
@@ -191,7 +191,7 @@ func TestInstallUpdateUninstall(t *testing.T) {
 	}
 
 	// New release appears: Refresh flags the update, Install replaces files.
-	fakeGitHub(t, "0.2.0", writeZip(t, "", map[string]string{"printcraft-0.2.0-windows-x64-portable/printcraft.exe": "v2"}), "")
+	fakeGitHub(t, "0.2.0", writeZip(t, "", map[string]string{"pdfcraft-0.2.0-windows-x64-portable/pdfcraft.exe": "v2"}), "")
 	h.Refresh(ctx)
 	if st := find(h.List(), "pdfcraft"); !st.UpdateAvailable || st.LatestVersion != "0.2.0" {
 		t.Fatalf("expected update flag: %+v", st)
@@ -227,11 +227,11 @@ func TestChecksumMismatchKeepsPreviousInstall(t *testing.T) {
 	data := t.TempDir()
 	h := newTestHub(t, data)
 	ctx := context.Background()
-	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/printcraft.exe": "v1"}), "")
+	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/pdfcraft.exe": "v1"}), "")
 	if _, err := h.Install(ctx, "pdfcraft"); err != nil {
 		t.Fatal(err)
 	}
-	fakeGitHub(t, "0.2.0", writeZip(t, "", map[string]string{"p/printcraft.exe": "evil"}), strings.Repeat("0", 64))
+	fakeGitHub(t, "0.2.0", writeZip(t, "", map[string]string{"p/pdfcraft.exe": "evil"}), strings.Repeat("0", 64))
 	if _, err := h.Install(ctx, "pdfcraft"); err == nil || !strings.Contains(err.Error(), "checksum") {
 		t.Fatalf("want checksum error, got %v", err)
 	}
@@ -257,7 +257,7 @@ func TestPortableFolderCanMove(t *testing.T) {
 		h.goos, h.goarch = "windows", "amd64"
 		return h
 	}
-	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/printcraft.exe": "v1"}), "")
+	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/pdfcraft.exe": "v1"}), "")
 	if _, err := open(root).Install(context.Background(), "pdfcraft"); err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestCleanUninstallRemovesOnlyAppData(t *testing.T) {
 	data := t.TempDir()
 	h := newTestHub(t, data)
 	ctx := context.Background()
-	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/printcraft.exe": "v1"}), "")
+	fakeGitHub(t, "0.1.0", writeZip(t, "", map[string]string{"p/pdfcraft.exe": "v1"}), "")
 	if _, err := h.Install(ctx, "pdfcraft"); err != nil {
 		t.Fatal(err)
 	}

@@ -18,9 +18,16 @@
 
   const shown = $derived(
     (view === "installed" ? hub.installed : view === "updates" ? hub.updates : hub.apps).filter((a) =>
-      `${a.name} ${a.category} ${a.description}`.toLowerCase().includes(query.trim().toLowerCase()),
+      `${a.name} ${a.group} ${a.category} ${a.description}`.toLowerCase().includes(query.trim().toLowerCase()),
     ),
   );
+  // Catalog order keeps each group contiguous, so a Map preserves section order.
+  // Not Map.groupBy: older macOS/Linux WebKit webviews lack it.
+  const groups = $derived.by(() => {
+    const m = new Map<string, AppState[]>();
+    for (const a of shown) m.set(a.group, [...(m.get(a.group) ?? []), a]);
+    return m;
+  });
 
   const nav = $derived([
     { id: "all" as const, label: "All apps", count: hub.apps.length },
@@ -145,17 +152,22 @@
       </header>
 
       {#if shown.length}
-        <ul class="index">
-          {#each shown as app (app.id)}
-            <AppCard
-              {app}
-              onUninstall={(a) => {
-                cleanUninstall = !a.installed; // leftovers-only removal is always clean
-                uninstallApp = a;
-              }}
-            />
-          {/each}
-        </ul>
+        {#each groups as [group, apps], i (group)}
+          <section class="group" aria-labelledby="group-{i}">
+            <h2 class="group__title" id="group-{i}">{group} <span class="group__count">{apps.length}</span></h2>
+            <ul class="index">
+              {#each apps as app (app.id)}
+                <AppCard
+                  {app}
+                  onUninstall={(a) => {
+                    cleanUninstall = !a.installed; // leftovers-only removal is always clean
+                    uninstallApp = a;
+                  }}
+                />
+              {/each}
+            </ul>
+          </section>
+        {/each}
       {:else}
         <div class="empty">
           <p class="empty__title">
@@ -374,6 +386,25 @@
 
   .index {
     border-bottom: 1px solid var(--color-rule);
+  }
+  .group + .group {
+    margin-top: 2.5rem;
+  }
+  .group__title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding-bottom: 0.625rem;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .group__count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
   }
 
   .empty {
