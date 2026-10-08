@@ -59,7 +59,7 @@ class HubStore {
   }
 
   async updateAll() {
-    // Sequential: keeps bandwidth and GitHub rate limits sane.
+    // Sequential: keeps bandwidth sane and progress readable.
     for (const a of this.updates) await this.install(a);
   }
 

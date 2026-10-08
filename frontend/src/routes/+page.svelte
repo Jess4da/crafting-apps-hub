@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Browser } from "@wailsio/runtime";
   import { Dialog, Navigation, Portal } from "@skeletonlabs/skeleton-svelte";
   import LayoutGridIcon from "@lucide/svelte/icons/layout-grid";
   import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
@@ -11,7 +10,6 @@
   import SunIcon from "@lucide/svelte/icons/sun";
   import MoonIcon from "@lucide/svelte/icons/moon";
   import XIcon from "@lucide/svelte/icons/x";
-  import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import FolderCogIcon from "@lucide/svelte/icons/folder-cog";
   import PackageOpenIcon from "@lucide/svelte/icons/package-open";
   import type { AppState } from "#bindings/craftinghub/internal/hub/models.ts";
@@ -22,7 +20,6 @@
   let view = $state<View>("all");
   let query = $state("");
   let dark = $state(true);
-  let notesApp = $state<AppState | null>(null);
   let uninstallApp = $state<AppState | null>(null);
   let cleanUninstall = $state(false);
 
@@ -141,7 +138,6 @@
           {#each shown as app (app.id)}
             <AppCard
               {app}
-              onNotes={(a) => (notesApp = a)}
               onUninstall={(a) => {
                 cleanUninstall = !a.installed; // leftovers-only removal is always clean
                 uninstallApp = a;
@@ -163,27 +159,6 @@
     {/if}
   </main>
 </div>
-
-<!-- Release notes -->
-<Dialog open={!!notesApp} onOpenChange={(e) => !e.open && (notesApp = null)}>
-  <Portal>
-    <Dialog.Backdrop class="fixed inset-0 z-50 bg-surface-50-950/60" />
-    <Dialog.Positioner class="fixed inset-0 z-50 flex justify-center items-center p-6">
-      <Dialog.Content class="card bg-surface-100-900 w-full max-w-2xl max-h-[85vh] flex flex-col p-5 gap-4 shadow-xl {animation}">
-        <header class="flex justify-between items-center gap-4">
-          <Dialog.Title class="h5">{notesApp?.name} v{notesApp?.latestVersion}</Dialog.Title>
-          <Dialog.CloseTrigger class="btn-icon hover:preset-tonal" aria-label="Close"><XIcon class="size-4" /></Dialog.CloseTrigger>
-        </header>
-        <pre class="pre text-xs whitespace-pre-wrap overflow-y-auto flex-1">{notesApp?.releaseNotes}</pre>
-        <footer class="flex justify-end">
-          <button type="button" class="btn preset-tonal" onclick={() => notesApp && Browser.OpenURL(notesApp.releaseUrl)}>
-            <ExternalLinkIcon class="size-4" />View on GitHub
-          </button>
-        </footer>
-      </Dialog.Content>
-    </Dialog.Positioner>
-  </Portal>
-</Dialog>
 
 <!-- Uninstall confirmation -->
 <Dialog role="alertdialog" open={!!uninstallApp} onOpenChange={(e) => !e.open && (uninstallApp = null)}>

@@ -13,7 +13,7 @@ Desktop launcher that installs, updates, uninstalls and launches the Craft apps:
 | DesignCraft | [storytold/designcraft](https://github.com/storytold/designcraft) | InDesign |
 
 How it works:
-- Reads each repo's latest GitHub release and picks the portable build for this OS/arch: Windows `*-portable.zip`, Linux/FreeBSD `*.tar.gz`, macOS `*-macos-universal.dmg`.
+- Finds each repo's latest release without GitHub's REST API, so there is no 60-requests/hour limit and no token is needed. The `github.com/storytold/<app>/releases/latest` redirect gives the version. The release's `SHA256SUMS.txt` lists the files and their checksums. The hub then picks the portable build for this OS/arch: Windows `*-portable.zip`, Linux/FreeBSD `*.tar.gz`, macOS `*-macos-universal.dmg`. The release-notes button opens the release page on GitHub.
 - Every download is checked against the release's `SHA256SUMS.txt`. A release without a checksum is refused.
 - Installs per user, so no admin rights are needed. Default locations:
   - Windows: `%LOCALAPPDATA%\Programs\CraftingApps`
@@ -25,8 +25,6 @@ How it works:
 - All apps install from their **portable** builds. PhotoCraft's Windows zip also ships `portable.txt`, so it keeps its settings beside its exe in `PhotoCraftData` instead of `%APPDATA%`. The hub carries that folder over on every update and keeps it on a plain uninstall, so a reinstall gets the same settings back. A clean uninstall deletes it. The other apps always store settings in the user profile.
 - Uninstall deletes the app's install folder. Tick **Also delete settings, recovery files and caches** for a clean uninstall: it also removes the folders the app writes for itself (for example `%APPDATA%\FilmCraft`, `%LOCALAPPDATA%\EffectCraft`). The dialog lists the exact folders first. Leftovers from an earlier uninstall can be cleared with the eraser button. User work is never touched: documents, the LightCraft library (`~/Pictures/LightCraft Library`), and EffectCraft presets (`~/Documents/EffectCraft`).
 - Hub state is stored in `<user config dir>/CraftingAppsHub/state.json`.
-
-Set `GITHUB_TOKEN` if you hit GitHub's 60-requests/hour anonymous limit.
 
 ## Develop
 

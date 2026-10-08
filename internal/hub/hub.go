@@ -38,8 +38,6 @@ type AppState struct {
 	App
 	Installed       *Installed `json:"installed"`
 	LatestVersion   string     `json:"latestVersion"`
-	PublishedAt     time.Time  `json:"publishedAt"`
-	ReleaseNotes    string     `json:"releaseNotes"`
 	ReleaseURL      string     `json:"releaseUrl"`
 	DownloadSize    int64      `json:"downloadSize"`
 	Supported       bool       `json:"supported"` // a build exists for this OS/arch
@@ -173,8 +171,6 @@ func (h *Hub) stateLocked(a App) AppState {
 		return s
 	}
 	s.LatestVersion = rel.Version()
-	s.PublishedAt = rel.PublishedAt
-	s.ReleaseNotes = rel.Body
 	s.ReleaseURL = rel.HTMLURL
 	if asset, ok := pickAsset(rel, a.Asset, h.goos, h.goarch); ok {
 		s.Supported = true
@@ -190,6 +186,12 @@ func (h *Hub) Refresh(ctx context.Context) []AppState {
 	for _, a := range Catalog {
 		wg.Go(func() {
 			rel, err := latestRelease(ctx, a.Repo)
+			if err == nil {
+				h.mu.Lock()
+				known, same := h.releases[a.ID]
+				h.mu.Unlock()
+				rel = withSize(ctx, rel, a, h.goos, h.goarch, known, same && known.Tag == rel.Tag)
+			}
 			h.mu.Lock()
 			defer h.mu.Unlock()
 			if err != nil {
@@ -234,10 +236,7 @@ func (h *Hub) Install(ctx context.Context, id string) (AppState, error) {
 	if !ok {
 		return AppState{}, fmt.Errorf("%s %s has no build for %s", app.Name, rel.Version(), h.Platform())
 	}
-	sum, err := h.expectedSum(ctx, rel, asset.Name)
-	if err != nil {
-		return AppState{}, err
-	}
+	sum := rel.Sums[asset.Name]
 
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return AppState{}, err
@@ -298,30 +297,28 @@ func (h *Hub) Install(ctx context.Context, id string) (AppState, error) {
 	return h.stateLocked(app), nil
 }
 
-func (h *Hub) expectedSum(ctx context.Context, rel Release, name string) (string, error) {
-	for _, a := range rel.Assets {
-		if a.Name != sumsAsset {
-			continue
-		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.URL, nil)
-		if err != nil {
-			return "", err
-		}
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return "", err
-		}
-		defer res.Body.Close()
-		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("checksums: %s", res.Status)
-		}
-		if sum := parseSums(res.Body)[name]; sum != "" {
-			return sum, nil
-		}
-		return "", fmt.Errorf("%s is not listed in %s", name, sumsAsset)
+// withSize fills in the download size of the asset this platform uses, reusing
+// the size from the previous check when the release has not changed.
+func withSize(ctx context.Context, rel Release, a App, goos, goarch string, prev Release, reuse bool) Release {
+	asset, ok := pickAsset(rel, a.Asset, goos, goarch)
+	if !ok {
+		return rel
 	}
-	// Refuse unverifiable downloads rather than install something unchecked.
-	return "", fmt.Errorf("release %s has no %s", rel.Tag, sumsAsset)
+	size := int64(0)
+	if reuse {
+		if p, ok := pickAsset(prev, a.Asset, goos, goarch); ok {
+			size = p.Size
+		}
+	}
+	if size == 0 {
+		size = assetSize(ctx, asset)
+	}
+	for i := range rel.Assets {
+		if rel.Assets[i].Name == asset.Name {
+			rel.Assets[i].Size = size
+		}
+	}
+	return rel
 }
 
 // download streams asset to dst, hashing as it goes, and fails on mismatch.

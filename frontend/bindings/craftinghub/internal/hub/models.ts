@@ -17,8 +17,6 @@ export class AppState {
     "description": string;
     "installed": Installed | null;
     "latestVersion": string;
-    "publishedAt": Date;
-    "releaseNotes": string;
     "releaseUrl": string;
     "downloadSize": number;
 
@@ -60,12 +58,6 @@ export class AppState {
         if (!("latestVersion" in $$source)) {
             this["latestVersion"] = "";
         }
-        if (!("publishedAt" in $$source)) {
-            this["publishedAt"] = new Date("0001-01-01T00:00:00.000Z");
-        }
-        if (!("releaseNotes" in $$source)) {
-            this["releaseNotes"] = "";
-        }
         if (!("releaseUrl" in $$source)) {
             this["releaseUrl"] = "";
         }
@@ -93,17 +85,13 @@ export class AppState {
      */
     static createFrom($$source: any = {}): AppState {
         const $$createField6_0 = $$createType1;
-        const $$createField8_0 = $Create.DateFromTime;
-        const $$createField15_0 = $$createType2;
+        const $$createField13_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("installed" in $$parsedSource) {
             $$parsedSource["installed"] = $$createField6_0($$parsedSource["installed"]);
         }
-        if ("publishedAt" in $$parsedSource) {
-            $$parsedSource["publishedAt"] = $$createField8_0($$parsedSource["publishedAt"]);
-        }
         if ("dataDirs" in $$parsedSource) {
-            $$parsedSource["dataDirs"] = $$createField15_0($$parsedSource["dataDirs"]);
+            $$parsedSource["dataDirs"] = $$createField13_0($$parsedSource["dataDirs"]);
         }
         return new AppState($$parsedSource as Partial<AppState>);
     }

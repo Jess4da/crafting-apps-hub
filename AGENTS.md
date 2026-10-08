@@ -6,7 +6,7 @@ Crafting Apps Hub: a Wails v3 (`v3.0.0-beta.28`) desktop launcher that installs,
 ## Architecture & Data Flow
 ```mermaid
 flowchart LR
-  GH[GitHub releases API<br/>+ SHA256SUMS.txt] --> Hub[internal/hub.Hub]
+  GH[github.com web: /releases/latest redirect<br/>+ SHA256SUMS.txt, no REST API] --> Hub[internal/hub.Hub]
   Hub -->|state.json| Disk[(user config dir)]
   Hub -->|portable zip / tar.gz / dmg| Apps[(install root)]
   Hub -->|emit hub:progress| UI
@@ -16,7 +16,7 @@ flowchart LR
 ```
 - `internal/hub/` is pure Go and contains no Wails imports, so it can be unit-tested without the runtime.
   - `catalog.go`: static `Catalog`. `App.Asset` is the release file prefix and executable name. **pdfcraft ships as `printcraft`.**
-  - `release.go`: GitHub client (`latestRelease`, `apiBase` var as test seam, `GITHUB_TOKEN` honored), `pickAsset` (OS/arch → asset; portable builds only, never MSI/deb/rpm), `parseSums`, `newerVersion`.
+  - `release.go`: release discovery **without the REST API** (no rate limit, no token). `latestRelease` reads the tag from the `/releases/latest` 302 (`noRedirect` client), then fetches `SHA256SUMS.txt`. Its entries are both the asset list and the checksums (`Release.Sums`). A release without it is an error. `assetSize` does one HEAD for the UI size, reused while the tag is unchanged (`withSize`). `ghBase` var is the test seam. Also `pickAsset` (OS/arch → asset; portable builds only, never MSI/deb/rpm), `parseSums`, `newerVersion`. Release notes are not fetched; the UI links to `releaseUrl`. Do not reintroduce `api.github.com`.
   - `extract.go`: zip / tar.gz with zip-slip guard (`safeJoin`), dmg via `hdiutil` + `ditto` (macOS only), `findExecutable`.
   - `hub.go`: `Hub` holds the mutex-protected state. `Install` handles both install and update: download → hash while streaming → verify checksum → extract to `<root>/.tmp-*` → rename-swap with rollback. `Uninstall(id, clean)`, `Launch` (detached), `Refresh` (parallel `wg.Go`).
   - `datadirs.go`: resolves `App.Data` (per-app settings/recovery/cache folders, traced from each app's Rust source) against `baseDirs` (`config`/`data`/`cache`/`temp`; `h.base` is the test seam). Only existing folders are returned, as `AppState.DataDirs`. When an app changes where it stores data, update `App.Data` in `catalog.go`. Never add folders that hold user work.
@@ -41,7 +41,7 @@ wails3 dev                                  # Go rebuild + Vite :9245 + app
 wails3 build                                # bin/wails-crafting-apps-hub(.exe)
 wails3 task package                         # platform installer
 wails3 task common:generate:bindings        # after changing any exported Go method/type on HubService or hub.Hub
-go test ./internal/...                      # backend tests (httptest fake GitHub)
+go test ./internal/...                      # backend tests (httptest fake github.com)
 go vet ./...
 cd frontend && bun run check                # svelte-kit sync + svelte-check (must be 0 errors/warnings)
 go build -tags server -o bin/hub-server . && WAILS_SERVER_PORT=8765 ./bin/hub-server
@@ -75,6 +75,6 @@ For smoke tests, isolate state: set `APPDATA` / `LOCALAPPDATA` (Windows) or `HOM
 - `build:frontend` and `generate:bindings` are `run: once` to avoid races in parallel builds. Keep it that way.
 
 ## Testing & QA
-- `internal/hub/hub_test.go` covers asset picking per OS/arch (including the printcraft prefix and the arm64→x64 fallback), numeric version ordering, sums parsing, zip-slip rejection, a full install → refresh → update → restart-persistence → uninstall cycle against an `httptest` fake GitHub, checksum mismatch preserving the previous install with no leftover temp dirs, clean uninstall (plain keeps data; clean removes only mapped folders, including legacy `PrintCraft` ones, and leaves lookalike/sibling folders alone), and PhotoCraft portable data surviving update → failed update → plain uninstall → reinstall, then being removed by clean uninstall. Tests always override `h.base` so they never touch the real profile.
-- No frontend unit tests. Verify UI changes by running `bun run check`, then exercising the server-mode build in a browser. Install FilmCraft (≈32 MB, the smallest) for a real download test. Use `GITHUB_TOKEN=$(gh auth token)`, because repeated smoke runs exhaust the 60/h anonymous API limit. `go build` can serve a stale embedded `frontend/dist`: after a frontend rebuild, use `go build -a` or check the served `nodes/2.*.js` hash, and make sure no old `hub-server.exe` still holds the port.
+- `internal/hub/hub_test.go` covers asset picking per OS/arch (including the printcraft prefix and the arm64→x64 fallback), numeric version ordering, sums parsing, zip-slip rejection, release discovery from the fake github.com web endpoints (version, size via one HEAD reused on the next refresh, error for unserved apps), refusing releases without `SHA256SUMS.txt`, a full install → refresh → update → restart-persistence → uninstall cycle, checksum mismatch preserving the previous install with no leftover temp dirs, clean uninstall (plain keeps data; clean removes only mapped folders, including legacy `PrintCraft` ones, and leaves lookalike/sibling folders alone), and PhotoCraft portable data surviving update → failed update → plain uninstall → reinstall, then being removed by clean uninstall. Tests always override `h.base` so they never touch the real profile.
+- No frontend unit tests. Verify UI changes by running `bun run check`, then exercising the server-mode build in a browser. Install FilmCraft (≈32 MB, the smallest) for a real download test. `go build` can serve a stale embedded `frontend/dist`: after a frontend rebuild, use `go build -a` or check the served `nodes/2.*.js` hash, and make sure no old `hub-server.exe` still holds the port.
 - No CI or lint config. Use `gofmt` and `go vet`. The `build/ios/*.go` template files are not gofmt-clean upstream; leave them.

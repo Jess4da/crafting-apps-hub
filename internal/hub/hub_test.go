@@ -6,14 +6,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func rel(tag string, names ...string) Release {
@@ -115,39 +116,47 @@ func writeZip(t *testing.T, path string, files map[string]string) []byte {
 	return buf.Bytes()
 }
 
-// fakeGitHub serves a PdfCraft release API + assets. sum overrides the
-// checksum file contents ("" = correct sum).
-func fakeGitHub(t *testing.T, version string, zipBytes []byte, sum string) {
-	fakeRelease(t, "pdfcraft", "printcraft", version, zipBytes, sum)
+// fakeGitHub serves a PdfCraft release from a fake github.com. sum overrides
+// the checksum file contents ("" = correct sum).
+func fakeGitHub(t *testing.T, version string, zipBytes []byte, sum string) *fakeGH {
+	return fakeRelease(t, "pdfcraft", "printcraft", version, zipBytes, sum)
 }
 
-func fakeRelease(t *testing.T, repo, prefix, version string, zipBytes []byte, sum string) {
+type fakeGH struct{ heads, sums atomic.Int32 }
+
+// fakeRelease mimics the github.com web endpoints the hub uses: the
+// /releases/latest redirect, SHA256SUMS.txt and the asset (GET and HEAD).
+func fakeRelease(t *testing.T, repo, prefix, version string, zipBytes []byte, sum string) *fakeGH {
 	t.Helper()
 	asset := fmt.Sprintf("%s-%s-windows-x64-portable.zip", prefix, version)
 	if sum == "" {
 		h := sha256.Sum256(zipBytes)
 		sum = hex.EncodeToString(h[:])
 	}
-	var srv *httptest.Server
-	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	f := &fakeGH{}
+	base := "/storytold/" + repo + "/releases"
+	dl := base + "/download/v" + version + "/"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/repos/storytold/" + repo + "/releases/latest":
-			json.NewEncoder(w).Encode(Release{Tag: "v" + version, Assets: []Asset{
-				{Name: asset, Size: int64(len(zipBytes)), URL: srv.URL + "/dl/" + asset},
-				{Name: sumsAsset, URL: srv.URL + "/dl/sums"},
-			}})
-		case "/dl/" + asset:
-			w.Write(zipBytes)
-		case "/dl/sums":
-			fmt.Fprintf(w, "%s  %s\n", sum, asset)
+		case base + "/latest":
+			http.Redirect(w, r, base+"/tag/v"+version, http.StatusFound)
+		case dl + sumsAsset:
+			f.sums.Add(1)
+			fmt.Fprintf(w, "%s  %s\n%s  other-file.zip\n", sum, asset, strings.Repeat("a", 64))
+		case dl + asset:
+			if r.Method == http.MethodHead {
+				f.heads.Add(1)
+			}
+			http.ServeContent(w, r, asset, time.Time{}, bytes.NewReader(zipBytes))
 		default:
 			http.NotFound(w, r)
 		}
 	}))
 	t.Cleanup(srv.Close)
-	old := apiBase
-	apiBase = srv.URL
-	t.Cleanup(func() { apiBase = old })
+	old := ghBase
+	ghBase = srv.URL
+	t.Cleanup(func() { ghBase = old })
+	return f
 }
 
 func newTestHub(t *testing.T, data string) *Hub {
@@ -371,6 +380,54 @@ func TestPortableDataSurvivesUpdateAndUninstall(t *testing.T) {
 	}
 	if _, err := os.Stat(dir); !os.IsNotExist(err) || len(s.DataDirs) != 0 {
 		t.Fatalf("clean uninstall left %s / %v", dir, s.DataDirs)
+	}
+}
+
+// Release discovery uses only github.com web endpoints (redirect + checksum
+// file), never the rate-limited REST API.
+func TestRefreshFromWebEndpoints(t *testing.T) {
+	h := newTestHub(t, t.TempDir())
+	ctx := context.Background()
+	zip := writeZip(t, "", map[string]string{"p/printcraft.exe": "v1"})
+	f := fakeGitHub(t, "0.2.0", zip, "")
+
+	st := find(h.Refresh(ctx), "pdfcraft")
+	if st.LatestVersion != "0.2.0" || !st.Supported || st.DownloadSize != int64(len(zip)) {
+		t.Fatalf("got %+v", st)
+	}
+	if !strings.HasSuffix(st.ReleaseURL, "/storytold/pdfcraft/releases/tag/v0.2.0") {
+		t.Fatalf("release url %q", st.ReleaseURL)
+	}
+	// Apps the fake doesn't serve report an error instead of a version.
+	if other := find(h.List(), "filmcraft"); other.Error == "" || other.LatestVersion != "" {
+		t.Fatalf("filmcraft: %+v", other)
+	}
+	// Same release on the next check: size is reused, not fetched again.
+	h.Refresh(ctx)
+	if n := f.heads.Load(); n != 1 {
+		t.Fatalf("HEAD requests = %d, want 1", n)
+	}
+}
+
+func TestReleaseWithoutChecksumsIsRefused(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/releases/latest") {
+			http.Redirect(w, r, "/storytold/pdfcraft/releases/tag/v1.0.0", http.StatusFound)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+	old := ghBase
+	ghBase = srv.URL
+	defer func() { ghBase = old }()
+
+	if _, err := latestRelease(context.Background(), "pdfcraft"); err == nil || !strings.Contains(err.Error(), sumsAsset) {
+		t.Fatalf("want missing-checksums error, got %v", err)
+	}
+	h := newTestHub(t, t.TempDir())
+	if _, err := h.Install(context.Background(), "pdfcraft"); err == nil {
+		t.Fatal("installed without checksums")
 	}
 }
 

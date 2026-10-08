@@ -7,6 +7,7 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import EraserIcon from "@lucide/svelte/icons/eraser";
   import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
+  import { Browser } from "@wailsio/runtime";
   import CircleAlertIcon from "@lucide/svelte/icons/circle-alert";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import type { AppState } from "#bindings/craftinghub/internal/hub/models.ts";
@@ -14,9 +15,8 @@
 
   let {
     app,
-    onNotes,
     onUninstall,
-  }: { app: AppState; onNotes: (a: AppState) => void; onUninstall: (a: AppState) => void } = $props();
+  }: { app: AppState; onUninstall: (a: AppState) => void } = $props();
 
   const busy = $derived(hub.busy[app.id]);
   const progress = $derived(hub.progress[app.id]);
@@ -113,7 +113,7 @@
         </button>
       {/if}
     {/if}
-    <button type="button" class="btn-icon preset-tonal" title="Release notes" aria-label="{app.name} release notes" disabled={!app.releaseNotes} onclick={() => onNotes(app)}>
+    <button type="button" class="btn-icon preset-tonal" title="Release notes on GitHub" aria-label="{app.name} release notes" disabled={!app.releaseUrl} onclick={() => Browser.OpenURL(app.releaseUrl)}>
       <ScrollTextIcon class="size-4" />
     </button>
   </footer>

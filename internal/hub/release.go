@@ -3,30 +3,31 @@ package hub
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type Asset struct {
-	Name string `json:"name"`
-	Size int64  `json:"size"`
-	URL  string `json:"browser_download_url"`
+	Name string
+	Size int64 // 0 when unknown
+	URL  string
 }
 
+// Release is what the hub knows about a repo's latest release. It is built
+// from github.com web endpoints only (no REST API, so no 60/h rate limit):
+// the /releases/latest redirect gives the tag, and the release's
+// SHA256SUMS.txt lists every asset together with its checksum.
 type Release struct {
-	Tag         string    `json:"tag_name"`
-	Name        string    `json:"name"`
-	Body        string    `json:"body"`
-	HTMLURL     string    `json:"html_url"`
-	PublishedAt time.Time `json:"published_at"`
-	Assets      []Asset   `json:"assets"`
+	Tag     string
+	HTMLURL string
+	Assets  []Asset
+	Sums    map[string]string // asset name → lowercase hex sha256
 }
 
 // Version strips the leading "v" from the tag.
@@ -34,38 +35,82 @@ func (r Release) Version() string { return strings.TrimPrefix(r.Tag, "v") }
 
 const sumsAsset = "SHA256SUMS.txt"
 
-var apiClient = &http.Client{Timeout: 30 * time.Second}
+// ghBase is a var so tests can point it at httptest.
+var ghBase = "https://github.com"
 
-// apiBase is a var so tests can point it at httptest.
-var apiBase = "https://api.github.com"
+// noRedirect reads the /releases/latest redirect instead of following it.
+var noRedirect = &http.Client{
+	Timeout:       30 * time.Second,
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
+
+var webClient = &http.Client{Timeout: 30 * time.Second}
 
 func latestRelease(ctx context.Context, repo string) (Release, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/repos/%s/%s/releases/latest", apiBase, Owner, repo), nil)
+	base := fmt.Sprintf("%s/%s/%s/releases", ghBase, Owner, repo)
+	res, err := get(ctx, noRedirect, http.MethodGet, base+"/latest")
 	if err != nil {
 		return Release{}, err
 	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "crafting-apps-hub")
-	// Unauthenticated API allows 60 req/h; a token lifts that to 5000.
-	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
-		req.Header.Set("Authorization", "Bearer "+tok)
+	res.Body.Close()
+	if res.StatusCode != http.StatusFound && res.StatusCode != http.StatusMovedPermanently {
+		return Release{}, fmt.Errorf("%s: no published release (%s)", repo, res.Status)
 	}
-	res, err := apiClient.Do(req)
+	loc, err := res.Location()
+	if err != nil {
+		return Release{}, fmt.Errorf("%s: %w", repo, err)
+	}
+	_, tag, ok := strings.Cut(loc.Path, "/releases/tag/")
+	if !ok || tag == "" {
+		return Release{}, fmt.Errorf("%s: unexpected latest-release redirect %s", repo, loc)
+	}
+	if tag, err = url.PathUnescape(tag); err != nil {
+		return Release{}, err
+	}
+
+	dl := base + "/download/" + url.PathEscape(tag) + "/"
+	res, err = get(ctx, webClient, http.MethodGet, dl+sumsAsset)
 	if err != nil {
 		return Release{}, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		if res.StatusCode == http.StatusForbidden || res.StatusCode == http.StatusTooManyRequests {
-			return Release{}, errors.New("GitHub rate limit reached; try again later or set GITHUB_TOKEN")
-		}
-		return Release{}, fmt.Errorf("GitHub %s: %s", repo, res.Status)
+		// Refuse unverifiable releases rather than install something unchecked.
+		return Release{}, fmt.Errorf("%s %s has no %s (%s)", repo, tag, sumsAsset, res.Status)
 	}
-	var rel Release
-	if err := json.NewDecoder(res.Body).Decode(&rel); err != nil {
-		return Release{}, fmt.Errorf("decode %s release: %w", repo, err)
+	rel := Release{Tag: tag, HTMLURL: base + "/tag/" + url.PathEscape(tag), Sums: parseSums(io.LimitReader(res.Body, 1<<20))}
+	for name := range rel.Sums {
+		rel.Assets = append(rel.Assets, Asset{Name: name, URL: dl + url.PathEscape(name)})
 	}
 	return rel, nil
+}
+
+// assetSize asks for the download size without downloading (0 on failure;
+// the size is only shown in the UI).
+func assetSize(ctx context.Context, a Asset) int64 {
+	res, err := get(ctx, webClient, http.MethodHead, a.URL)
+	if err != nil {
+		return 0
+	}
+	res.Body.Close()
+	return max(res.ContentLength, 0)
+}
+
+func get(ctx context.Context, c *http.Client, method, u string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "crafting-apps-hub")
+	res, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode == http.StatusTooManyRequests {
+		res.Body.Close()
+		return nil, errors.New("GitHub is throttling requests; try again in a few minutes")
+	}
+	return res, nil
 }
 
 // pickAsset returns the portable build for goos/goarch, or false when the
