@@ -30,7 +30,7 @@ flowchart LR
 | Path | Purpose |
 |---|---|
 | `internal/hub/` | Install/update engine + tests |
-| `frontend/src/lib/` | `hub.svelte.ts` (store, toaster, `formatBytes`), `AppCard.svelte` (one catalogue row: icon · name · version · one action + ⋯ menu) |
+| `frontend/src/lib/` | `hub.svelte.ts` (store, toaster, `formatBytes`), `AppCard.svelte` (one catalogue row: icon · name · version · one action + GitHub link + ⋯ menu) |
 | `frontend/src/routes/` | `+layout.svelte` (CSS + failure-only `Toast.Group`), `+page.svelte` (rail nav, app index, Settings, uninstall sheet), `layout.css` (fonts, semantic tokens, shared `.act`/`.more`/`.menu`), `atelier.css` (Skeleton theme palette), `+layout.ts` |
 | `.hallmark/log.json` | Hallmark design-run memory (macrostructure/theme history); keep it when redesigning |
 | `frontend/static/icons/` | `<app id>.png` icons copied from each repo's `assets/app-icon/hicolor/256x256` (MIT/Apache, see `LICENSE.txt`) |
@@ -58,8 +58,8 @@ For smoke tests, copy the built binary into a temp folder and run it there (its 
 - **Context**: long calls take `ctx context.Context` first. Wails cancels it when the JS `CancellablePromise` is cancelled.
 - **Svelte 5 runes only** (`$state`, `$derived`, `$props`, `onclick=`). Skeleton components use the composed pattern plus the data-in/event-out pattern (`open` + `onOpenChange`), not `bind:`.
 - **Imports**: SvelteKit 3 has no `$lib`. Use package.json subpath imports with explicit extensions: `#lib/hub.svelte.ts`, `#bindings/craftinghub/index.ts`, `#bindings/craftinghub/internal/hub/models.ts`.
-- **Icons**: per-icon Lucide imports, `import EllipsisIcon from "@lucide/svelte/icons/ellipsis"`, sized with `class="size-4"`. The UI is mostly typographic, so use icons only where text can't do the job.
-- **Design system (Hallmark, editorial / Index-First)**: the app is a printed-catalogue index, not a card grid. Each app is a hairline-separated row with **one** primary action (`Install` / `Open` / `Update`). Secondary actions (folder, release notes, uninstall) live in the row's Skeleton `Menu`. Keep that shape.
+- **Icons**: per-icon Lucide imports, `import EllipsisIcon from "@lucide/svelte/icons/ellipsis"`, sized with `class="size-4"`. Lucide has no brand icons, so the GitHub mark in `AppCard.svelte` is an inline Octicon SVG. The UI is mostly typographic, so use icons only where text can't do the job.
+- **Design system (Hallmark, editorial / Index-First)**: the app is a printed-catalogue index, not a card grid. Each app is a hairline-separated row with **one** primary action (`Install` / `Open` / `Update`), then a GitHub repo icon link (`.more`). Other secondary actions (folder, release notes, uninstall) live in the row's Skeleton `Menu`. Credits (author + storytold) are in Settings and README. External links use `Browser.OpenURL`. Keep that shape.
   - Fonts are self-hosted (`@fontsource*`, works offline): `--font-display` Fraunces for headings and app names, `--font-body` IBM Plex Sans, `--font-mono` IBM Plex Mono **only** for version numbers, counts and paths. No other faces, and headings are never italic.
   - Colour: every value comes from a token. The Skeleton palette is in `routes/atelier.css` (`data-theme="atelier"`: warm oat surface hue 70, oxblood primary hue 25). Semantic tokens in `layout.css` cover `--color-paper`, `-ink`, `-muted`, `-rule`, `-accent` (text), `-accent-fill` (+`-accent-ink`), `-danger`, `-danger-fill`, `-warn-text`, `-focus`, and have `.dark` overrides. Never write raw hex or oklch in components; add a token instead. Accent stays under about 5% of the view: updates, the active filter underline, the update count.
   - Buttons: `.act` is an outlined ink pill whose colour inverts instantly on hover; `.act--accent` (update), `.act--danger` (destructive confirm), `.act--quiet`. Button labels never wrap; shorten them instead.

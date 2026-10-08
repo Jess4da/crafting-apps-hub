@@ -3,6 +3,7 @@
    * Styles here reference tokens from routes/layout.css + routes/atelier.css only. */
   import { onMount } from "svelte";
   import { Dialog, Portal } from "@skeletonlabs/skeleton-svelte";
+  import { Browser } from "@wailsio/runtime";
   import SearchIcon from "@lucide/svelte/icons/search";
   import type { AppState } from "#bindings/craftinghub/internal/hub/models.ts";
   import AppCard from "#lib/AppCard.svelte";
@@ -108,6 +109,16 @@
           Each app comes from its GitHub release, is checked against the release’s published SHA-256 sums, and is installed
           for your user only — no administrator rights. This computer gets the <code class="path path--inline">{hub.platform}</code>
           builds.
+        </p>
+      </section>
+      <section class="setting">
+        <h2 class="setting__name">Credits</h2>
+        <p class="setting__hint">
+          Crafting Apps Hub is made by
+          <a class="anchor" href="https://meatchopper.xyz/portfolio" onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}>Jessada Duangpanyasawang</a>.
+          The Craft apps and their icons are made by the ArtCraft Team and contributors at
+          <a class="anchor" href="https://github.com/storytold" onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}>storytold</a>,
+          licensed MIT or Apache-2.0.
         </p>
       </section>
     {:else}

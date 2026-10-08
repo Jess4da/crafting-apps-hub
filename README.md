@@ -37,3 +37,8 @@ wails3 task package # installer for the current OS
 go test ./...       # backend tests
 cd frontend && bun run check
 ```
+
+## Credits
+
+- Crafting Apps Hub by [Jessada Duangpanyasawang](https://meatchopper.xyz/portfolio).
+- PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft and DesignCraft, including their icons, by the ArtCraft Team and contributors at [storytold](https://github.com/storytold). Each app is licensed MIT OR Apache-2.0. This hub only downloads their official releases.
