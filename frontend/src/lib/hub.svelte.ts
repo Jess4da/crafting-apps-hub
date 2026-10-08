@@ -10,6 +10,7 @@ class HubStore {
   apps = $state<AppState[]>([]);
   settings = $state<Settings>({ installRoot: "" });
   platform = $state("");
+  version = $state("");
   refreshing = $state(false);
   progress = $state<Record<string, Progress>>({});
   /** ids with a running install/update/uninstall */
@@ -22,10 +23,11 @@ class HubStore {
     Events.On("hub:progress", (e) => {
       this.progress[e.data.id] = e.data;
     });
-    [this.apps, this.settings, this.platform] = await Promise.all([
+    [this.apps, this.settings, this.platform, this.version] = await Promise.all([
       HubService.List(),
       HubService.GetSettings(),
       HubService.Platform(),
+      HubService.Version(),
     ]);
     await this.refresh();
   }

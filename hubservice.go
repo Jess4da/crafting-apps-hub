@@ -12,6 +12,9 @@ type HubService struct {
 	*hub.Hub
 }
 
+// Version is the hub's own SemVer, from build/config.yml.
+func (s *HubService) Version() string { return version }
+
 // ChooseInstallRoot opens a folder picker; returns current settings unchanged
 // when the user cancels.
 func (s *HubService) ChooseInstallRoot() (hub.Settings, error) {

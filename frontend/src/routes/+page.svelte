@@ -184,7 +184,7 @@
 
     <footer class="foot">
       <span>Installs to <code class="path path--inline">{hub.settings.installRoot}</code></span>
-      <span>{hub.platform}</span>
+      <span><span class="foot__ver">v{hub.version}</span> · {hub.platform}</span>
     </footer>
   </main>
 </div>
@@ -472,6 +472,9 @@
     padding-top: 3rem;
     color: var(--color-muted);
     font-size: 0.8125rem;
+  }
+  .foot__ver {
+    font-family: var(--font-mono);
   }
 
   /* Dialog: a paper sheet, not a floating card. */

@@ -107,6 +107,13 @@ export function Uninstall(id: string, clean: boolean): $CancellablePromise<hub$0
     });
 }
 
+/**
+ * Version is the hub's own SemVer, from build/config.yml.
+ */
+export function Version(): $CancellablePromise<string> {
+    return $Call.ByID(969868478);
+}
+
 // Private type creation functions
 const $$createType0 = hub$0.Settings.createFrom;
 const $$createType1 = hub$0.AppState.createFrom;

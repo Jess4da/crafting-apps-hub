@@ -43,6 +43,8 @@ go test ./...       # backend tests
 cd frontend && bun run check
 ```
 
+Versioning: [SemVer](https://semver.org). The version lives in `build/config.yml` (`info.version`) and is shown in the app footer. To release, bump it, run `wails3 task common:update:build-assets`, update `Version="X.Y.Z.0"` in `build/windows/msix/*.xml`, then commit and tag `vX.Y.Z`.
+
 ## Credits
 
 - Crafting Apps Hub by [Jessada Duangpanyasawang](https://meatchopper.xyz/portfolio).
