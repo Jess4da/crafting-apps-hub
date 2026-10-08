@@ -49,11 +49,11 @@ build:windows:
     GO_VERSION: "1.25.14" # same Go as golang:1.25-trixie; the hosted runner's preinstalled Go is not on PATH
   before_script:
     - $ProgressPreference = "SilentlyContinue"
+    - irm https://bun.sh/install.ps1 | iex # runs in this session and rewrites $env:Path, so set PATH after it
     - Invoke-WebRequest "https://go.dev/dl/go$env:GO_VERSION.windows-amd64.zip" -OutFile "$env:TEMP\go.zip"
     - tar -xf "$env:TEMP\go.zip" -C $env:TEMP
-    - $env:Path = "$env:TEMP\go\bin;$env:USERPROFILE\go\bin;$env:Path"
-    - irm https://bun.sh/install.ps1 | iex
-    - $env:Path = "$env:USERPROFILE\.bun\bin;$env:Path"
+    - $env:Path = "$env:TEMP\go\bin;$env:USERPROFILE\go\bin;$env:USERPROFILE\.bun\bin;$env:Path"
+    - go version
     - go install github.com/wailsapp/wails/v3/cmd/wails3@$env:WAILS_VERSION
     - if ($LASTEXITCODE) { exit $LASTEXITCODE }
   script:
