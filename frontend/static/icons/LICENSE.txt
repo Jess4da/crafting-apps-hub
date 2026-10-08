@@ -1,0 +1,2 @@
+App icons are copied from each project under storytold/<app>/assets/app-icon
+(hicolor/256x256). Licensed MIT OR Apache-2.0 by their respective projects.

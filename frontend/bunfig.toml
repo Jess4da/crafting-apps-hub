@@ -1,0 +1,4 @@
+[install]
+# Refuse package versions published less than 7 days ago (seconds),
+# reducing exposure to freshly compromised or malicious releases.
+minimumReleaseAge = 604800

@@ -1,0 +1,37 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "imports": {
+    "#lib/*": "./src/lib/*",
+    "#bindings/*": "./bindings/*"
+  },
+  "scripts": {
+    "dev": "vite dev",
+    "build:dev": "vite build --minify false --mode development",
+    "build": "vite build --mode production",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@wailsio/runtime": "latest"
+  },
+  "devDependencies": {
+    "@lucide/svelte": "^1.49.0",
+    "@skeletonlabs/skeleton": "^5.0.1",
+    "@skeletonlabs/skeleton-svelte": "^5.0.1",
+    "@sveltejs/adapter-static": "^4.0.0",
+    "@sveltejs/kit": "^3.0.1",
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "svelte": "^5.46.4",
+    "svelte-check": "^4.4.8",
+    "tailwindcss": "^4.3.3",
+    "tslib": "^2.6.2",
+    "typescript": "^6",
+    "vite": "^8.0.5"
+  }
+}
