@@ -77,6 +77,7 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version: "1.25" }
       - run: go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VERSION
+        env: { CGO_ENABLED: "0" } # CLI only; skips the GTK/WebKit link this job has no headers for
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
       # Ed25519ph signature per archive, as <asset>.sig (base64), which the hub's self-updater requires.
