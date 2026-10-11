@@ -29,7 +29,16 @@ How it works:
 - Updates replace files atomically. If an update fails, the previous version is kept.
 - All apps install from their **portable** builds. PhotoCraft's Windows zip also ships `portable.txt`, so it keeps its settings beside its exe in `PhotoCraftData` instead of `%APPDATA%`. The hub carries that folder over on every update and keeps it on a plain uninstall, so a reinstall gets the same settings back. A clean uninstall deletes it. The other apps always store settings in the user profile.
 - Uninstall deletes the app's install folder. Tick **Also delete settings, recovery files and caches** for a clean uninstall: it also removes the folders the app writes for itself (for example `%APPDATA%\FilmCraft`, `%LOCALAPPDATA%\EffectCraft`). The dialog lists the exact folders first. Leftovers from an earlier uninstall can be cleared with the eraser button. User work is never touched: documents, the LightCraft library (`~/Pictures/LightCraft Library`), and EffectCraft presets (`~/Documents/EffectCraft`).
-- Hub state is stored in `<user config dir>/CraftingAppsHub/state.json`.
+- Portable: hub state (`hub-data/`) and apps (`apps/`) live next to the hub executable. If that folder isn't writable, it falls back to the per-user locations above.
+
+## Download
+
+Grab the latest build from [Releases](https://github.com/Jess4da/crafting-apps-hub/releases/latest) and check it against `SHA256SUMS.txt`:
+- Windows: `*-windows-x64.exe`
+- Linux: `*-linux-x64.tar.gz` (needs GTK4 + WebKitGTK 6)
+- macOS: `*-macos-universal.zip` (Apple Silicon + Intel)
+
+Builds are not code-signed. Windows SmartScreen shows "Windows protected your PC": click **More info → Run anyway**. On macOS, right-click the app → **Open**, or run `xattr -dr com.apple.quarantine "Crafting Apps Hub.app"`.
 
 ## Develop
 
@@ -43,9 +52,15 @@ go test ./...       # backend tests
 cd frontend && bun run check
 ```
 
-Versioning: [SemVer](https://semver.org). The version lives in `build/config.yml` (`info.version`) and is shown in the app footer. To release, bump it, run `wails3 task common:update:build-assets`, update `Version="X.Y.Z.0"` in `build/windows/msix/*.xml`, then commit and tag `vX.Y.Z`.
+Versioning: [SemVer](https://semver.org). The version lives in `build/config.yml` (`info.version`) and is shown in the app footer. To release, bump it, run `wails3 task common:update:build-assets`, update `Version="X.Y.Z.0"` in `build/windows/msix/*.xml`, then commit and push tag `vX.Y.Z`. GitHub Actions (`.github/workflows/release.yml`) tests, builds Windows/Linux/macOS and publishes the release with `SHA256SUMS.txt`.
 
 ## Credits
 
 - Crafting Apps Hub by [Jessada Duangpanyasawang](https://meatchopper.xyz/portfolio).
 - All Craft apps listed above, including their icons, by the ArtCraft Team and contributors at [storytold](https://github.com/storytold). Each app is licensed MIT OR Apache-2.0. This hub only downloads their official releases.
+
+Crafting Apps Hub is an unofficial launcher, not affiliated with storytold.
+
+## License
+
+[MIT](LICENSE)

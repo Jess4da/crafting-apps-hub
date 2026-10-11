@@ -1,0 +1,79 @@
+# Tag push `vX.Y.Z` → test, build Windows/Linux/macOS, publish a GitHub release with SHA256SUMS.txt.
+# Manual run (workflow_dispatch) builds and uploads artifacts only, no release.
+# ponytail: unsigned binaries, x64 Linux/Windows only; add signing secrets / arm64 runners when needed.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  WAILS_VERSION: v3.0.0-beta.28
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - name: Tag matches build/config.yml version
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION=$(grep -m1 '^  version:' build/config.yml | cut -d'"' -f2)
+          [ "$GITHUB_REF_NAME" = "v$VERSION" ] || { echo "tag $GITHUB_REF_NAME does not match build/config.yml version v$VERSION"; exit 1; }
+      # Wails' Linux webview packages need GTK4/WebKitGTK headers even for vet/test.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev pkg-config
+      - run: mkdir -p frontend/dist && touch frontend/dist/.keep # go:embed needs the dir; tests don't use the UI
+      - run: go vet ./...
+      - run: go test ./...
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - { os: windows-latest, asset: windows-x64 }
+          - { os: ubuntu-24.04, asset: linux-x64 }
+          - { os: macos-latest, asset: macos-universal }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - uses: oven-sh/setup-bun@v2
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev pkg-config
+      - run: go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VERSION
+      - name: Build
+        run: |
+          mkdir dist
+          NAME="crafting-apps-hub-${GITHUB_REF_NAME}-${{ matrix.asset }}"
+          case "${{ runner.os }}" in
+            Windows) wails3 build && cp "bin/Crafting Apps Hub.exe" "dist/$NAME.exe" ;;
+            Linux)   wails3 build && tar -czf "dist/$NAME.tar.gz" -C bin "Crafting Apps Hub" ;;
+            macOS)   wails3 task darwin:package:universal && ditto -c -k --keepParent "bin/Crafting Apps Hub.app" "dist/$NAME.zip" ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/*
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist, merge-multiple: true }
+      - run: cd dist && sha256sum * > SHA256SUMS.txt
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
