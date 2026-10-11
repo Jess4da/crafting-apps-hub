@@ -56,7 +56,7 @@ Versioning: [SemVer](https://semver.org). The version lives in `build/config.yml
 
 ## Credits
 
-- Crafting Apps Hub by [Jessada Duangpanyasawang](https://meatchopper.xyz/portfolio).
+- Crafting Apps Hub by [Jess4da](https://github.com/Jess4da).
 - All Craft apps listed above, including their icons, by the ArtCraft Team and contributors at [storytold](https://github.com/storytold). Each app is licensed MIT OR Apache-2.0. This hub only downloads their official releases.
 
 Crafting Apps Hub is an unofficial launcher, not affiliated with storytold.

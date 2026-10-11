@@ -17,7 +17,7 @@
     !define INFO_PRODUCTVERSION "0.1.1"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "(c) 2026, Jessada Duangpanyasawang"
+    !define INFO_COPYRIGHT "(c) 2026, Jess4da"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"

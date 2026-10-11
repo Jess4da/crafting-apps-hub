@@ -3,6 +3,7 @@
 
 export {
     AppState,
+    HubUpdate,
     Installed,
     Progress,
     Settings

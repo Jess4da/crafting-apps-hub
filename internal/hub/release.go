@@ -46,8 +46,8 @@ var noRedirect = &http.Client{
 
 var webClient = &http.Client{Timeout: 30 * time.Second}
 
-func latestRelease(ctx context.Context, repo string) (Release, error) {
-	base := fmt.Sprintf("%s/%s/%s/releases", ghBase, Owner, repo)
+func latestRelease(ctx context.Context, owner, repo string) (Release, error) {
+	base := fmt.Sprintf("%s/%s/%s/releases", ghBase, owner, repo)
 	res, err := get(ctx, noRedirect, http.MethodGet, base+"/latest")
 	if err != nil {
 		return Release{}, err
@@ -94,6 +94,26 @@ func assetSize(ctx context.Context, a Asset) int64 {
 	}
 	res.Body.Close()
 	return max(res.ContentLength, 0)
+}
+
+// Hub's own GitHub repo, checked for self-updates.
+const hubOwner, hubRepo = "Jess4da", "crafting-apps-hub"
+
+// HubUpdate is a newer release of the hub itself.
+type HubUpdate struct {
+	Version string `json:"version"`
+	URL     string `json:"url"` // release page; the user downloads from there
+}
+
+// CheckHubUpdate returns the hub's latest release when it is newer than
+// current, or nil when current is up to date.
+// ponytail: notify-only; in-place exe swap needs per-OS replace (.app bundle, locked .exe), add if users ask.
+func CheckHubUpdate(ctx context.Context, current string) (*HubUpdate, error) {
+	rel, err := latestRelease(ctx, hubOwner, hubRepo)
+	if err != nil || !newerVersion(rel.Version(), current) {
+		return nil, err
+	}
+	return &HubUpdate{Version: rel.Version(), URL: rel.HTMLURL}, nil
 }
 
 func get(ctx context.Context, c *http.Client, method, u string) (*http.Response, error) {

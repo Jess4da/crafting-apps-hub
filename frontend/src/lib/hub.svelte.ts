@@ -1,7 +1,7 @@
 import { Events } from "@wailsio/runtime";
 import { createToaster } from "@skeletonlabs/skeleton-svelte";
 import { HubService } from "#bindings/craftinghub/index.ts";
-import type { AppState, Progress, Settings } from "#bindings/craftinghub/internal/hub/models.ts";
+import type { AppState, HubUpdate, Progress, Settings } from "#bindings/craftinghub/internal/hub/models.ts";
 
 export const toaster = createToaster({ placement: "bottom-end" });
 
@@ -11,6 +11,8 @@ class HubStore {
   settings = $state<Settings>({ installRoot: "" });
   platform = $state("");
   version = $state("");
+  /** newer hub release, null when current or the check failed */
+  hubUpdate = $state<HubUpdate | null>(null);
   refreshing = $state(false);
   progress = $state<Record<string, Progress>>({});
   /** ids with a running install/update/uninstall */
@@ -29,6 +31,8 @@ class HubStore {
       HubService.Platform(),
       HubService.Version(),
     ]);
+    // Self-update check is best-effort: offline or no release yet stays silent.
+    HubService.CheckHubUpdate().then((u) => (this.hubUpdate = u), () => {});
     await this.refresh();
   }
 

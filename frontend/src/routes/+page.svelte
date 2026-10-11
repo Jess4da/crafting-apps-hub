@@ -122,7 +122,8 @@
         <h2 class="setting__name">Credits</h2>
         <p class="setting__hint">
           Crafting Apps Hub is made by
-          <a class="anchor" href="https://meatchopper.xyz/portfolio" onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}>Jessada Duangpanyasawang</a>.
+          <a class="anchor" href="https://github.com/Jess4da" onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}>Jess4da</a>
+          (<a class="anchor" href="https://github.com/Jess4da/crafting-apps-hub" onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}>source</a>, MIT).
           The Craft apps and their icons are made by the ArtCraft Team and contributors at
           <a class="anchor" href="https://github.com/storytold" onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}>storytold</a>,
           licensed MIT or Apache-2.0.
@@ -184,7 +185,12 @@
 
     <footer class="foot">
       <span>Installs to <code class="path path--inline">{hub.settings.installRoot}</code></span>
-      <span><span class="foot__ver">v{hub.version}</span> · {hub.platform}</span>
+      <span>
+        {#if hub.hubUpdate}
+          <button type="button" class="foot__update" onclick={() => Browser.OpenURL(hub.hubUpdate!.url)}>Hub v{hub.hubUpdate.version} available</button> ·
+        {/if}
+        <span class="foot__ver">v{hub.version}</span> · {hub.platform}
+      </span>
     </footer>
   </main>
 </div>
@@ -475,6 +481,11 @@
   }
   .foot__ver {
     font-family: var(--font-mono);
+  }
+  .foot__update {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 
   /* Dialog: a paper sheet, not a floating card. */

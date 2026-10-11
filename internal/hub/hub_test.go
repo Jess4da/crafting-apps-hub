@@ -457,12 +457,41 @@ func TestReleaseWithoutChecksumsIsRefused(t *testing.T) {
 	ghBase = srv.URL
 	defer func() { ghBase = old }()
 
-	if _, err := latestRelease(context.Background(), "pdfcraft"); err == nil || !strings.Contains(err.Error(), sumsAsset) {
+	if _, err := latestRelease(context.Background(), Owner, "pdfcraft"); err == nil || !strings.Contains(err.Error(), sumsAsset) {
 		t.Fatalf("want missing-checksums error, got %v", err)
 	}
 	h := newTestHub(t, t.TempDir())
 	if _, err := h.Install(context.Background(), "pdfcraft"); err == nil {
 		t.Fatal("installed without checksums")
+	}
+}
+
+func TestCheckHubUpdate(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		base := "/" + hubOwner + "/" + hubRepo + "/releases"
+		switch r.URL.Path {
+		case base + "/latest":
+			http.Redirect(w, r, base+"/tag/v0.2.0", http.StatusFound)
+		case base + "/download/v0.2.0/" + sumsAsset:
+			fmt.Fprintf(w, "%s  crafting-apps-hub-v0.2.0-windows-x64.exe\n", strings.Repeat("a", 64))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	old := ghBase
+	ghBase = srv.URL
+	defer func() { ghBase = old }()
+
+	ctx := context.Background()
+	u, err := CheckHubUpdate(ctx, "0.1.1")
+	if err != nil || u == nil || u.Version != "0.2.0" || !strings.HasSuffix(u.URL, "/releases/tag/v0.2.0") {
+		t.Fatalf("older hub: got %+v, %v", u, err)
+	}
+	for _, cur := range []string{"0.2.0", "0.10.0"} {
+		if u, err := CheckHubUpdate(ctx, cur); err != nil || u != nil {
+			t.Fatalf("hub %s: want no update, got %+v, %v", cur, u, err)
+		}
 	}
 }
 

@@ -214,7 +214,7 @@ func (h *Hub) Refresh(ctx context.Context) []AppState {
 	var wg sync.WaitGroup
 	for _, a := range Catalog {
 		wg.Go(func() {
-			rel, err := latestRelease(ctx, a.Repo)
+			rel, err := latestRelease(ctx, Owner, a.Repo)
 			if err == nil {
 				h.mu.Lock()
 				known, same := h.releases[a.ID]
@@ -257,7 +257,7 @@ func (h *Hub) Install(ctx context.Context, id string) (AppState, error) {
 		h.mu.Unlock()
 	}()
 
-	rel, err := latestRelease(ctx, app.Repo)
+	rel, err := latestRelease(ctx, Owner, app.Repo)
 	if err != nil {
 		return AppState{}, err
 	}

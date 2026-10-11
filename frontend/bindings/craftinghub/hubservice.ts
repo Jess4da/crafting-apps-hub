@@ -16,18 +16,27 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as hub$0 from "./internal/hub/models.js";
 
 /**
+ * CheckHubUpdate reports a newer hub release on GitHub, or nil when current.
+ */
+export function CheckHubUpdate(): $CancellablePromise<hub$0.HubUpdate | null> {
+    return $Call.ByID(104098776).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
+/**
  * ChooseInstallRoot opens a folder picker; returns current settings unchanged
  * when the user cancels.
  */
 export function ChooseInstallRoot(): $CancellablePromise<hub$0.Settings> {
     return $Call.ByID(2886547270).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType2($result);
     });
 }
 
 export function GetSettings(): $CancellablePromise<hub$0.Settings> {
     return $Call.ByID(2060969419).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType2($result);
     });
 }
 
@@ -37,7 +46,7 @@ export function GetSettings(): $CancellablePromise<hub$0.Settings> {
  */
 export function Install(id: string): $CancellablePromise<hub$0.AppState> {
     return $Call.ByID(1504650689, id).then(($result: any) => {
-        return $$createType1($result);
+        return $$createType3($result);
     });
 }
 
@@ -60,7 +69,7 @@ export function Launch(id: string): $CancellablePromise<void> {
  */
 export function List(): $CancellablePromise<hub$0.AppState[]> {
     return $Call.ByID(3156432046).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType4($result);
     });
 }
 
@@ -83,7 +92,7 @@ export function Platform(): $CancellablePromise<string> {
  */
 export function Refresh(): $CancellablePromise<hub$0.AppState[]> {
     return $Call.ByID(1529483017).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType4($result);
     });
 }
 
@@ -92,7 +101,7 @@ export function Refresh(): $CancellablePromise<hub$0.AppState[]> {
  */
 export function SetInstallRoot(dir: string): $CancellablePromise<hub$0.Settings> {
     return $Call.ByID(3567120057, dir).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType2($result);
     });
 }
 
@@ -103,7 +112,7 @@ export function SetInstallRoot(dir: string): $CancellablePromise<hub$0.Settings>
  */
 export function Uninstall(id: string, clean: boolean): $CancellablePromise<hub$0.AppState> {
     return $Call.ByID(1330942852, id, clean).then(($result: any) => {
-        return $$createType1($result);
+        return $$createType3($result);
     });
 }
 
@@ -115,6 +124,8 @@ export function Version(): $CancellablePromise<string> {
 }
 
 // Private type creation functions
-const $$createType0 = hub$0.Settings.createFrom;
-const $$createType1 = hub$0.AppState.createFrom;
-const $$createType2 = $Create.Array($$createType1);
+const $$createType0 = hub$0.HubUpdate.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = hub$0.Settings.createFrom;
+const $$createType3 = hub$0.AppState.createFrom;
+const $$createType4 = $Create.Array($$createType3);
