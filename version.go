@@ -9,12 +9,19 @@ import (
 //go:embed build/config.yml
 var buildConfig []byte
 
-// version is info.version from build/config.yml, the single SemVer source
-// (it also feeds the Info.plist / info.json build assets).
-var version = func() string {
+// version is the hub's SemVer. Release builds set it from the git tag with
+// -ldflags "-X main.version=X.Y.Z" (VERSION env, see the platform Taskfiles);
+// local builds fall back to info.version in build/config.yml.
+// Must stay uninitialized: -X is ignored for vars with a non-constant initializer.
+var version string
+
+func init() {
+	if version != "" {
+		return
+	}
 	var c struct{ Info struct{ Version string } }
 	if err := yaml.Unmarshal(buildConfig, &c); err != nil {
 		panic(err)
 	}
-	return c.Info.Version
-}()
+	version = c.Info.Version
+}

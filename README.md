@@ -52,7 +52,7 @@ go test ./...       # backend tests
 cd frontend && bun run check
 ```
 
-Versioning: [SemVer](https://semver.org). The version lives in `build/config.yml` (`info.version`) and is shown in the app footer. To release, bump it, run `wails3 task common:update:build-assets`, update `Version="X.Y.Z.0"` in `build/windows/msix/*.xml`, then commit and push tag `vX.Y.Z`. GitHub Actions (`.github/workflows/release.yml`) tests, builds Windows/Linux/macOS and publishes the release with `SHA256SUMS.txt`.
+Versioning: [SemVer](https://semver.org); the app footer shows it. To release, push a tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. GitHub Actions (`.github/workflows/release.yml`) builds Windows/Linux/macOS with that version (`-ldflags -X main.version`) and publishes the release with `SHA256SUMS.txt`. Local builds use `info.version` from `build/config.yml`.
 
 ## Credits
 

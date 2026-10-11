@@ -10,6 +10,6 @@ var semver = regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((
 
 func TestVersionIsSemVer(t *testing.T) {
 	if !semver.MatchString(version) {
-		t.Fatalf("build/config.yml info.version %q is not SemVer (MAJOR.MINOR.PATCH)", version)
+		t.Fatalf("version %q (git tag or build/config.yml info.version) is not SemVer (MAJOR.MINOR.PATCH)", version)
 	}
 }
