@@ -178,6 +178,13 @@ func (h *Hub) SetInstallRoot(dir string) (Settings, error) {
 // Platform reports the OS/arch the hub picks builds for, e.g. "windows/amd64".
 func (h *Hub) Platform() string { return h.goos + "/" + h.goarch }
 
+// Busy reports whether any install/update/uninstall is running.
+func (h *Hub) Busy() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.busy) > 0
+}
+
 // List returns current state without touching the network.
 func (h *Hub) List() []AppState {
 	h.mu.Lock()

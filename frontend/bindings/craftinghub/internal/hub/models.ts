@@ -102,38 +102,6 @@ export class AppState {
 }
 
 /**
- * HubUpdate is a newer release of the hub itself.
- */
-export class HubUpdate {
-    "version": string;
-
-    /**
-     * release page; the user downloads from there
-     */
-    "url": string;
-
-    /** Creates a new HubUpdate instance. */
-    constructor($$source: Partial<HubUpdate> = {}) {
-        if (!("version" in $$source)) {
-            this["version"] = "";
-        }
-        if (!("url" in $$source)) {
-            this["url"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new HubUpdate instance from a string or object.
-     */
-    static createFrom($$source: any = {}): HubUpdate {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new HubUpdate($$parsedSource as Partial<HubUpdate>);
-    }
-}
-
-/**
  * Installed is the persisted record of one installed app.
  */
 export class Installed {

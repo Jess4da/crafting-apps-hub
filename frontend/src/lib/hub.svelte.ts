@@ -1,7 +1,7 @@
-import { Events } from "@wailsio/runtime";
+import { Events, Updater } from "@wailsio/runtime";
 import { createToaster } from "@skeletonlabs/skeleton-svelte";
-import { HubService } from "#bindings/craftinghub/index.ts";
-import type { AppState, HubUpdate, Progress, Settings } from "#bindings/craftinghub/internal/hub/models.ts";
+import { HubService, type HubUpdate } from "#bindings/craftinghub/index.ts";
+import type { AppState, Progress, Settings } from "#bindings/craftinghub/internal/hub/models.ts";
 
 export const toaster = createToaster({ placement: "bottom-end" });
 
@@ -13,6 +13,9 @@ class HubStore {
   version = $state("");
   /** newer hub release, null when current or the check failed */
   hubUpdate = $state<HubUpdate | null>(null);
+  /** self-update stage; `received`/`total` while downloading */
+  hubStage = $state<"idle" | "downloading" | "ready">("idle");
+  hubProgress = $state({ received: 0, total: 0 });
   refreshing = $state(false);
   progress = $state<Record<string, Progress>>({});
   /** ids with a running install/update/uninstall */
@@ -33,6 +36,7 @@ class HubStore {
     ]);
     // Self-update check is best-effort: offline or no release yet stays silent.
     HubService.CheckHubUpdate().then((u) => (this.hubUpdate = u), () => {});
+    Events.On(Updater.Events.DownloadProgress, (e) => (this.hubProgress = { received: e.data.written, total: e.data.total }));
     await this.refresh();
   }
 
@@ -101,6 +105,28 @@ class HubStore {
       this.settings = await HubService.ChooseInstallRoot();
     } catch (e) {
       toaster.error({ title: "Couldn't change folder", description: errText(e) });
+    }
+  }
+
+  // Download + verify + stage; the swap happens on restartHub.
+  async installHubUpdate() {
+    this.hubStage = "downloading";
+    try {
+      await HubService.InstallHubUpdate();
+      this.hubStage = "ready";
+    } catch (e) {
+      this.hubStage = "idle";
+      toaster.error({ title: "Hub update failed", description: errText(e) });
+      // Wails keeps the failed release pending; re-check so a retry fetches it afresh.
+      this.hubUpdate = await HubService.CheckHubUpdate().catch(() => null);
+    }
+  }
+
+  async restartHub() {
+    try {
+      await HubService.RestartHub();
+    } catch (e) {
+      toaster.error({ title: "Couldn't restart", description: errText(e) });
     }
   }
 }

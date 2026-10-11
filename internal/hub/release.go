@@ -3,6 +3,7 @@ package hub
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -97,24 +98,84 @@ func assetSize(ctx context.Context, a Asset) int64 {
 }
 
 // Hub's own GitHub repo, checked for self-updates.
-const hubOwner, hubRepo = "Jess4da", "crafting-apps-hub"
+const selfOwner, selfRepo = "Jess4da", "crafting-apps-hub"
 
-// HubUpdate is a newer release of the hub itself.
-type HubUpdate struct {
-	Version string `json:"version"`
-	URL     string `json:"url"` // release page; the user downloads from there
+// SelfUpdate is a newer hub build for this OS/arch.
+type SelfUpdate struct {
+	Version string
+	Asset   Asset
+	Sig     []byte // Ed25519ph over the asset's SHA-512, from <asset>.sig
+	Page    string // release page
 }
 
-// CheckHubUpdate returns the hub's latest release when it is newer than
-// current, or nil when current is up to date.
-// ponytail: notify-only; in-place exe swap needs per-OS replace (.app bundle, locked .exe), add if users ask.
-func CheckHubUpdate(ctx context.Context, current string) (*HubUpdate, error) {
-	rel, err := latestRelease(ctx, hubOwner, hubRepo)
+// CheckSelfUpdate returns the hub's latest release when it is newer than
+// current, or nil when current is up to date. Same web endpoints as the
+// apps (no REST API). The asset must be listed in SHA256SUMS.txt and have a
+// <asset>.sig; the caller verifies the signature against the pinned key.
+func CheckSelfUpdate(ctx context.Context, current, goos, goarch string) (*SelfUpdate, error) {
+	rel, err := latestRelease(ctx, selfOwner, selfRepo)
 	if err != nil || !newerVersion(rel.Version(), current) {
 		return nil, err
 	}
-	return &HubUpdate{Version: rel.Version(), URL: rel.HTMLURL}, nil
+	// Release workflow names: windows zip (x64 also covers arm64 via emulation), linux tar.gz, macOS universal zip.
+	var suffix string
+	switch {
+	case goos == "windows":
+		suffix = "windows-x64.zip"
+	case goos == "linux" && goarch == "amd64":
+		suffix = "linux-x64.tar.gz"
+	case goos == "darwin":
+		suffix = "macos-universal.zip"
+	default:
+		return nil, fmt.Errorf("hub %s has no build for %s/%s", rel.Tag, goos, goarch)
+	}
+	name := fmt.Sprintf("%s-%s-%s", selfRepo, rel.Tag, suffix)
+	var asset Asset
+	for _, a := range rel.Assets {
+		if a.Name == name {
+			asset = a
+		}
+	}
+	if asset.URL == "" {
+		return nil, fmt.Errorf("hub %s has no %s", rel.Tag, name)
+	}
+	res, err := get(ctx, webClient, http.MethodGet, asset.URL+".sig")
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("hub %s: %s.sig is missing (%s)", rel.Tag, name, res.Status)
+	}
+	b, err := io.ReadAll(io.LimitReader(res.Body, 1<<10))
+	if err != nil {
+		return nil, err
+	}
+	sig, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(b)))
+	if err != nil || len(sig) != 64 {
+		return nil, fmt.Errorf("hub %s: %s.sig is not a base64 Ed25519 signature", rel.Tag, name)
+	}
+	return &SelfUpdate{Version: rel.Version(), Asset: asset, Sig: sig, Page: rel.HTMLURL}, nil
 }
+
+// DownloadSelf streams a self-update asset to dst. The caller verifies Sum.
+func DownloadSelf(ctx context.Context, u *SelfUpdate, dst io.Writer, onProgress func(written, total int64)) error {
+	res, err := get(ctx, http.DefaultClient, http.MethodGet, u.Asset.URL) // no client timeout: large file, ctx cancels
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("download %s: %s", u.Asset.Name, res.Status)
+	}
+	var n int64
+	_, err = io.Copy(dst, io.TeeReader(res.Body, writerFunc(func(b []byte) { n += int64(len(b)); onProgress(n, res.ContentLength) })))
+	return err
+}
+
+type writerFunc func([]byte)
+
+func (f writerFunc) Write(b []byte) (int, error) { f(b); return len(b), nil }
 
 func get(ctx context.Context, c *http.Client, method, u string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, u, nil)

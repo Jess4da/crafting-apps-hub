@@ -34,11 +34,13 @@ How it works:
 ## Download
 
 Grab the latest build from [Releases](https://github.com/Jess4da/crafting-apps-hub/releases/latest) and check it against `SHA256SUMS.txt`:
-- Windows: `*-windows-x64.exe`
+- Windows: `*-windows-x64.zip` (unzip anywhere, run `Crafting Apps Hub.exe`)
 - Linux: `*-linux-x64.tar.gz` (needs GTK4 + WebKitGTK 6)
 - macOS: `*-macos-universal.zip` (Apple Silicon + Intel)
 
 Builds are not code-signed. Windows SmartScreen shows "Windows protected your PC": click **More info → Run anyway**. On macOS, right-click the app → **Open**, or run `xattr -dr com.apple.quarantine "Crafting Apps Hub.app"`.
+
+The hub updates itself: when a newer release is out, the footer shows **Update**, then **Restart**. Updates are signed (Ed25519), and the hub refuses any update whose signature doesn't match the key built into it. Only the hub's executable (the `.app` on macOS) is replaced; `hub-data/` and `apps/` beside it stay. If the hub's folder isn't writable, the footer links to the release page instead.
 
 ## Develop
 

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-
 	"craftinghub/internal/hub"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -16,11 +14,6 @@ type HubService struct {
 
 // Version is the hub's own SemVer, from build/config.yml.
 func (s *HubService) Version() string { return version }
-
-// CheckHubUpdate reports a newer hub release on GitHub, or nil when current.
-func (s *HubService) CheckHubUpdate(ctx context.Context) (*hub.HubUpdate, error) {
-	return hub.CheckHubUpdate(ctx, version)
-}
 
 // ChooseInstallRoot opens a folder picker; returns current settings unchanged
 // when the user cancels.

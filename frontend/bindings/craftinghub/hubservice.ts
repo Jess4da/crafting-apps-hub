@@ -15,10 +15,21 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // @ts-ignore: Unused imports
 import * as hub$0 from "./internal/hub/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
+/**
+ * Busy reports whether any install/update/uninstall is running.
+ */
+export function Busy(): $CancellablePromise<boolean> {
+    return $Call.ByID(3546476871);
+}
+
 /**
  * CheckHubUpdate reports a newer hub release on GitHub, or nil when current.
  */
-export function CheckHubUpdate(): $CancellablePromise<hub$0.HubUpdate | null> {
+export function CheckHubUpdate(): $CancellablePromise<$models.HubUpdate | null> {
     return $Call.ByID(104098776).then(($result: any) => {
         return $$createType1($result);
     });
@@ -55,6 +66,14 @@ export function Install(id: string): $CancellablePromise<hub$0.AppState> {
  */
 export function InstallDir(id: string): $CancellablePromise<string> {
     return $Call.ByID(10817360, id);
+}
+
+/**
+ * InstallHubUpdate downloads, verifies and stages the update found by
+ * CheckHubUpdate. Progress arrives as wails:updater:download-progress events.
+ */
+export function InstallHubUpdate(): $CancellablePromise<void> {
+    return $Call.ByID(1553585001);
 }
 
 /**
@@ -97,6 +116,14 @@ export function Refresh(): $CancellablePromise<hub$0.AppState[]> {
 }
 
 /**
+ * RestartHub quits and lets the Wails helper swap in the staged update,
+ * then relaunch. Refused while an app install/uninstall is running.
+ */
+export function RestartHub(): $CancellablePromise<void> {
+    return $Call.ByID(3321522748);
+}
+
+/**
  * SetInstallRoot changes where new installs go. Existing installs stay put.
  */
 export function SetInstallRoot(dir: string): $CancellablePromise<hub$0.Settings> {
@@ -124,7 +151,7 @@ export function Version(): $CancellablePromise<string> {
 }
 
 // Private type creation functions
-const $$createType0 = hub$0.HubUpdate.createFrom;
+const $$createType0 = $models.HubUpdate.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = hub$0.Settings.createFrom;
 const $$createType3 = hub$0.AppState.createFrom;

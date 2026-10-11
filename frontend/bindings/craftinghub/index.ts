@@ -5,3 +5,7 @@ import * as HubService from "./hubservice.js";
 export {
     HubService
 };
+
+export {
+    HubUpdate
+} from "./models.js";

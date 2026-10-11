@@ -57,7 +57,7 @@ jobs:
           mkdir dist
           NAME="crafting-apps-hub-${GITHUB_REF_NAME}-${{ matrix.asset }}"
           case "${{ runner.os }}" in
-            Windows) wails3 build && cp "bin/Crafting Apps Hub.exe" "dist/$NAME.exe" ;;
+            Windows) wails3 build && (cd bin && 7z a -tzip "../dist/$NAME.zip" "Crafting Apps Hub.exe") ;;
             Linux)   wails3 build && tar -czf "dist/$NAME.tar.gz" -C bin "Crafting Apps Hub" ;;
             macOS)   wails3 task darwin:package:universal && ditto -c -k --keepParent "bin/Crafting Apps Hub.app" "dist/$NAME.zip" ;;
           esac
@@ -73,8 +73,27 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4 # for build/updater.pub
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - run: go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VERSION
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
+      # Ed25519ph signature per archive, as <asset>.sig (base64), which the hub's self-updater requires.
+      # The manifest is only a vehicle for sign + verify; verifying against the committed build/updater.pub
+      # fails the release if the secret and the key pinned in the app ever diverge.
+      - name: Sign
+        env:
+          UPDATER_SIGNING_KEY: ${{ secrets.UPDATER_SIGNING_KEY }}
+        run: |
+          [ -n "$UPDATER_SIGNING_KEY" ] || { echo "UPDATER_SIGNING_KEY secret is not set"; exit 1; }
+          key="$RUNNER_TEMP/updater.key"
+          (umask 077; printf '%s\n' "$UPDATER_SIGNING_KEY" > "$key")
+          wails3 updater manifest -version "$VERSION" -key "$key" -output "$RUNNER_TEMP/manifest.json" dist
+          rm -f "$key"
+          wails3 updater verify -manifest "$RUNNER_TEMP/manifest.json" -publickey build/updater.pub -dir dist
+          jq -r '.artifacts[] | "\(.url) \(.signature)"' "$RUNNER_TEMP/manifest.json" | while read -r f s; do printf '%s\n' "$s" > "dist/$f.sig"; done
+          ls dist
       - run: cd dist && sha256sum * > SHA256SUMS.txt
       - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
         env:

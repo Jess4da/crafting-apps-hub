@@ -11,6 +11,7 @@ import (
 	"craftinghub/internal/hub"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/updater"
 )
 
 //go:embed all:frontend/dist
@@ -46,6 +47,14 @@ func main() {
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 	})
+	if err := app.Updater.Init(updater.Config{
+		CurrentVersion: version,
+		Providers:      []updater.Provider{selfSource{}},
+		PublicKey:      updaterPublicKey,   // releases MUST carry <asset>.sig; unsigned or wrongly signed updates fail
+		Window:         updater.WindowNone, // footer UI drives it
+	}); err != nil {
+		log.Fatal(err)
+	}
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "Crafting Apps Hub",

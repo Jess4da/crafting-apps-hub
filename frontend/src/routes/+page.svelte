@@ -185,11 +185,24 @@
 
     <footer class="foot">
       <span>Installs to <code class="path path--inline">{hub.settings.installRoot}</code></span>
-      <span>
+      <span class="foot__right">
         {#if hub.hubUpdate}
-          <button type="button" class="foot__update" onclick={() => Browser.OpenURL(hub.hubUpdate!.url)}>Hub v{hub.hubUpdate.version} available</button> ·
+          {@const u = hub.hubUpdate}
+          <span class="foot__update">
+            {#if !u.inPlace}
+              <button type="button" class="anchor" onclick={() => Browser.OpenURL(u.url)}>Hub v{u.version} available</button>
+            {:else if hub.hubStage === "ready"}
+              Hub v{u.version} ready
+              <button type="button" class="act act--accent" disabled={Object.keys(hub.busy).length > 0} onclick={() => hub.restartHub()}>Restart</button>
+            {:else if hub.hubStage === "downloading"}
+              Downloading hub <span class="foot__ver">{hub.hubProgress.total ? Math.round((hub.hubProgress.received / hub.hubProgress.total) * 100) : 0}%</span>
+            {:else}
+              Hub v{u.version}
+              <button type="button" class="act act--accent" onclick={() => hub.installHubUpdate()}>Update</button>
+            {/if}
+          </span>
         {/if}
-        <span class="foot__ver">v{hub.version}</span> · {hub.platform}
+        <span><span class="foot__ver">v{hub.version}</span> · {hub.platform}</span>
       </span>
     </footer>
   </main>
@@ -482,10 +495,17 @@
   .foot__ver {
     font-family: var(--font-mono);
   }
+  .foot__right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
   .foot__update {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--color-accent);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
   }
 
   /* Dialog: a paper sheet, not a floating card. */
