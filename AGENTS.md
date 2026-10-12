@@ -29,6 +29,7 @@ flowchart LR
 - `main.go` resolves dirs (`dirs()`), wires `emit` → `app.Event.Emit("hub:progress", p)`, and registers `application.RegisterEvent[hub.Progress]("hub:progress")` for typed TS events.
 - Portable by default: `dirs()` puts `hub-data/` (state) and `apps/` (install root) next to the hub executable, located via `os.Executable` + `EvalSymlinks` (never the working directory, so shortcuts with any "Start in" work). On macOS the base is the folder holding `.app`; for AppImage it is `$APPIMAGE`'s folder. An unwritable base (Program Files, translocated app) falls back to per-user dirs. `state.json` stores paths under the hub folder relative to it (`Hub.rel`/`Hub.abs`), so the folder can be moved or mounted under another drive letter.
 - Frontend: client-only SPA (`ssr = false`). `HubStore` (a class with `$state`/`$derived` fields) is the single store. It calls bindings, listens to `Events.On("hub:progress")`, and reports via the shared Skeleton `toaster`. The backend `AppState` is the source of truth: each mutating call returns the new `AppState`, which replaces the entry in `hub.apps`.
+  - Loading: `hub.loading` is true until the first `List()` returns. During that window `+page.svelte` shows `.ghost` placeholder rows (same grid as `.row`), hides the footer, and the summary is a bar. While `hub.refreshing` is true, a row with no version yet shows a placeholder bar. Bars use Skeleton's `placeholder` with `motion-safe:animate-pulse`.
 
 ## Key Directories
 | Path | Purpose |

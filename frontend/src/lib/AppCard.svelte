@@ -58,7 +58,7 @@
       <span>v{app.latestVersion}</span>
       {#if app.downloadSize}<span class="row__size">{formatBytes(app.downloadSize)}</span>{/if}
     {:else if hub.refreshing}
-      <span class="row__size">checking</span>
+      <span class="placeholder motion-safe:animate-pulse row__ghost"><span class="sr-only">checking</span></span>
     {/if}
   </p>
 
@@ -200,6 +200,9 @@
   }
   .row__size {
     color: var(--color-muted);
+  }
+  .row__ghost {
+    width: 3.5rem;
   }
   .row__actions {
     display: flex;

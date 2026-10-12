@@ -133,7 +133,11 @@
       <header class="head">
         <div class="head__text">
           <h1 class="head__title">{heading}</h1>
-          <p class="head__summary">{summary}</p>
+          {#if hub.loading}
+            <p class="head__summary"><span class="placeholder motion-safe:animate-pulse ghost__bar" style:width="14rem"></span></p>
+          {:else}
+            <p class="head__summary">{summary}</p>
+          {/if}
         </div>
         <div class="head__tools">
           <label class="search">
@@ -152,7 +156,21 @@
         </div>
       </header>
 
-      {#if shown.length}
+      {#if hub.loading}
+        <p class="sr-only" role="status">Loading apps</p>
+        <ul class="index" aria-hidden="true">
+          {#each [40, 30, 45, 35, 40, 30] as w, i (i)}
+            <li class="ghost">
+              <span class="placeholder motion-safe:animate-pulse ghost__icon"></span>
+              <span class="ghost__text">
+                <span class="placeholder motion-safe:animate-pulse ghost__bar" style:width="{w}%"></span>
+                <span class="placeholder motion-safe:animate-pulse ghost__bar" style:width="{w + 30}%"></span>
+              </span>
+              <span class="placeholder motion-safe:animate-pulse ghost__act"></span>
+            </li>
+          {/each}
+        </ul>
+      {:else if shown.length}
         {#each groups as [group, apps], i (group)}
           <section class="group" aria-labelledby="group-{i}">
             <h2 class="group__title" id="group-{i}">{group} <span class="group__count">{apps.length}</span></h2>
@@ -183,7 +201,7 @@
       {/if}
     {/if}
 
-    <footer class="foot">
+    <footer class="foot" hidden={hub.loading}>
       <span>Installs to <code class="path path--inline">{hub.settings.installRoot}</code></span>
       <span class="foot__right">
         {#if hub.hubUpdate}
@@ -405,6 +423,47 @@
 
   .index {
     border-bottom: 1px solid var(--color-rule);
+  }
+  /* Loading skeleton: same grid and sizes as AppCard's .row, so nothing shifts on load. */
+  .ghost {
+    display: grid;
+    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1.25rem;
+    padding-block: 1.125rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .ghost__icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.625rem;
+  }
+  .ghost__text {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .ghost__bar {
+    display: block;
+    max-width: 100%;
+    min-height: 0.875rem;
+  }
+  .ghost__act {
+    width: 6rem;
+    height: 2.5rem;
+    border-radius: 999px;
+  }
+  @media (max-width: 40rem) {
+    .ghost {
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+      column-gap: 0.75rem;
+    }
+    .ghost__icon {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+    .ghost__act {
+      width: 4.5rem;
+    }
   }
   .group + .group {
     margin-top: 2.5rem;

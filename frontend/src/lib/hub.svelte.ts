@@ -16,6 +16,8 @@ class HubStore {
   /** self-update stage; `received`/`total` while downloading */
   hubStage = $state<"idle" | "downloading" | "ready">("idle");
   hubProgress = $state({ received: 0, total: 0 });
+  /** true until the first List() returns; later refreshes use `refreshing` */
+  loading = $state(true);
   refreshing = $state(false);
   progress = $state<Record<string, Progress>>({});
   /** ids with a running install/update/uninstall */
@@ -34,6 +36,7 @@ class HubStore {
       HubService.Platform(),
       HubService.Version(),
     ]);
+    this.loading = false;
     // Self-update check is best-effort: offline or no release yet stays silent.
     HubService.CheckHubUpdate().then((u) => (this.hubUpdate = u), () => {});
     Events.On(Updater.Events.DownloadProgress, (e) => (this.hubProgress = { received: e.data.written, total: e.data.total }));
