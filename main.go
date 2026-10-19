@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"craftinghub/internal/hub"
 
@@ -76,25 +75,20 @@ func main() {
 	}
 }
 
-// dirs returns the hub's state dir and default install root. Portable by
-// default: both live next to the hub executable (found via os.Executable, so a
-// shortcut with another working directory still lands here). When that folder
-// is not writable (e.g. installed under Program Files, or a translocated macOS
-// app) it falls back to per-user folders.
+// dirs returns the hub's state dir and default install root. On Windows and
+// Linux it is portable by default: both live next to the hub executable (found
+// via os.Executable, so a shortcut with another working directory still lands
+// here), falling back to per-user folders when that folder is not writable
+// (e.g. under Program Files). macOS always uses per-user folders: the .app
+// bundle must stay unmodified (code seal, self-update replaces it whole).
 func dirs() (dataDir, installRoot string, err error) {
 	exe, err := os.Executable()
 	if p := os.Getenv("APPIMAGE"); p != "" { // AppImage runs from a read-only mount; use the .AppImage file
 		exe = p
 	}
-	if err == nil {
+	if err == nil && runtime.GOOS != "darwin" {
 		if exe, err = filepath.EvalSymlinks(exe); err == nil {
-			base := filepath.Dir(exe)
-			if runtime.GOOS == "darwin" { // .../Hub.app/Contents/MacOS/hub → folder holding Hub.app
-				if i := strings.LastIndex(base, ".app"+string(filepath.Separator)); i >= 0 {
-					base = filepath.Dir(base[:i+4])
-				}
-			}
-			if writable(base) {
+			if base := filepath.Dir(exe); writable(base) {
 				return filepath.Join(base, "hub-data"), filepath.Join(base, "apps"), nil
 			}
 		}

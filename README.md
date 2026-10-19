@@ -29,7 +29,7 @@ How it works:
 - Updates replace files atomically. If an update fails, the previous version is kept.
 - All apps install from their **portable** builds. PhotoCraft's Windows zip also ships `portable.txt`, so it keeps its settings beside its exe in `PhotoCraftData` instead of `%APPDATA%`. The hub carries that folder over on every update and keeps it on a plain uninstall, so a reinstall gets the same settings back. A clean uninstall deletes it. The other apps always store settings in the user profile.
 - Uninstall deletes the app's install folder. Tick **Also delete settings, recovery files and caches** for a clean uninstall: it also removes the folders the app writes for itself (for example `%APPDATA%\FilmCraft`, `%LOCALAPPDATA%\EffectCraft`). The dialog lists the exact folders first. Leftovers from an earlier uninstall can be cleared with the eraser button. User work is never touched: documents, the LightCraft library (`~/Pictures/LightCraft Library`), and EffectCraft presets (`~/Documents/EffectCraft`).
-- Portable: hub state (`hub-data/`) and apps (`apps/`) live next to the hub executable. If that folder isn't writable, it falls back to the per-user locations above.
+- Portable (Windows/Linux): hub state (`hub-data/`) and apps (`apps/`) live next to the hub executable. If that folder isn't writable, it falls back to the per-user locations above. macOS always uses the per-user locations (state in `~/Library/Application Support/CraftingAppsHub`), so the `.app` stays untouched and can be moved freely.
 
 ## Download
 
@@ -40,7 +40,7 @@ Grab the latest build from [Releases](https://github.com/Jess4da/crafting-apps-h
 
 Builds are not code-signed. Windows SmartScreen shows "Windows protected your PC": click **More info → Run anyway**. On macOS, right-click the app → **Open**, or run `xattr -dr com.apple.quarantine "Crafting Apps Hub.app"`.
 
-The hub updates itself: when a newer release is out, the footer shows **Update**, then **Restart**. Updates are signed (Ed25519), and the hub refuses any update whose signature doesn't match the key built into it. Only the hub's executable (the `.app` on macOS) is replaced; `hub-data/` and `apps/` beside it stay. If the hub's folder isn't writable, the footer links to the release page instead.
+The hub updates itself: when a newer release is out, the footer shows **Update**, then **Restart**. Updates are signed (Ed25519), and the hub refuses any update whose signature doesn't match the key built into it. Only the hub's executable (the `.app` on macOS) is replaced; `hub-data/` and `apps/` stay. If the hub's folder isn't writable, the footer links to the release page instead.
 
 ## Develop
 
