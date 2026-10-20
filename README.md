@@ -8,6 +8,7 @@ Desktop launcher that installs, updates, uninstalls and launches the Craft apps,
 | Creative | LightCraft | [storytold/lightcraft](https://github.com/storytold/lightcraft) | Lightroom |
 | Creative | VectorCraft | [storytold/vectorcraft](https://github.com/storytold/vectorcraft) | Illustrator |
 | Creative | DesignCraft | [storytold/designcraft](https://github.com/storytold/designcraft) | InDesign |
+| Creative | FigCraft | [storytold/figcraft](https://github.com/storytold/figcraft) | Figma |
 | Creative | FilmCraft | [storytold/filmcraft](https://github.com/storytold/filmcraft) | Premiere Pro |
 | Creative | EffectCraft | [storytold/effectcraft](https://github.com/storytold/effectcraft) | After Effects |
 | Creative | PdfCraft | [storytold/pdfcraft](https://github.com/storytold/pdfcraft) | Acrobat |

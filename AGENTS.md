@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Overview
-Crafting Apps Hub: a Wails v3 (`v3.0.0-beta.28`) desktop launcher that installs, updates, uninstalls and launches twelve Craft apps published as GitHub releases under `github.com/storytold/*` (photocraft, lightcraft, vectorcraft, designcraft, cadcraft, filmcraft, effectcraft, soundcraft, wordcraft, gridcraft, deckcraft, pdfcraft). Backend is Go. Frontend is SvelteKit 3 + Svelte 5, styled with Tailwind 4 + Skeleton 5 + Lucide icons, and built with bun.
+Crafting Apps Hub: a Wails v3 (`v3.0.0-beta.28`) desktop launcher that installs, updates, uninstalls and launches thirteen Craft apps published as GitHub releases under `github.com/storytold/*` (photocraft, lightcraft, vectorcraft, designcraft, figcraft, cadcraft, filmcraft, effectcraft, soundcraft, wordcraft, gridcraft, deckcraft, pdfcraft). Backend is Go. Frontend is SvelteKit 3 + Svelte 5, styled with Tailwind 4 + Skeleton 5 + Lucide icons, and built with bun.
 
 ## Architecture & Data Flow
 ```mermaid

@@ -34,7 +34,8 @@ type dataLoc struct{ base, win, mac, nix string }
 // and FilmCraft previews saved next to projects.
 // GridCraft, WordCraft, DeckCraft and SoundCraft keep ui.json in a config
 // folder; DeckCraft adds Recovery (inside it on macOS/Windows, under the data
-// dir on Linux). CADCraft persists nothing.
+// dir on Linux). CADCraft persists nothing. FigCraft keeps prefs, Recovery and
+// Plugins in a "FigCraft" config folder on every OS (services.rs).
 // Only PhotoCraft has a portable mode: its Windows zip ships portable.txt, which
 // makes it store everything in <exe dir>/PhotoCraftData (app_dirs.rs). The other
 // apps never write beside their executable.
@@ -55,6 +56,9 @@ var Catalog = []App{
 			{"config", "DesignCraft", "DesignCraft", "designcraft"}, // prefs (+ recovery on macOS/Windows)
 			{"data", "", "", "designcraft"},                         // Linux recovery
 		}},
+	{ID: "figcraft", Name: "FigCraft", Repo: "figcraft", Asset: "figcraft", Group: "Creative", Category: "Interface design",
+		Description: "Frames, auto layout, components, variables and prototypes. A clean-room take on Figma.",
+		Data:        []dataLoc{{"config", "FigCraft", "FigCraft", "FigCraft"}}},
 	{ID: "filmcraft", Name: "FilmCraft", Repo: "filmcraft", Asset: "filmcraft", Group: "Creative", Category: "Video editing",
 		Description: "Timeline editing, color and sound. A clean-room take on Premiere Pro.",
 		Data: []dataLoc{
