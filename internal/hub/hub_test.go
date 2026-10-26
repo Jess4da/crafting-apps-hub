@@ -532,3 +532,34 @@ func find(list []AppState, id string) AppState {
 	}
 	return AppState{}
 }
+
+func TestCatalogExtensions(t *testing.T) {
+	for _, a := range Catalog {
+		seen := map[string]bool{}
+		for _, ext := range a.Extensions {
+			if ext == "" || ext != strings.ToLower(ext) || strings.HasPrefix(ext, ".") || strings.ContainsAny(ext, " \t/\\") {
+				t.Errorf("%s: extension %q must be lowercase and dotless", a.ID, ext)
+			}
+			if seen[ext] {
+				t.Errorf("%s: duplicate extension %q", a.ID, ext)
+			}
+			seen[ext] = true
+		}
+	}
+}
+
+func TestSetDefaultAppRequiresInstalledApp(t *testing.T) {
+	h, err := New(t.TempDir(), t.TempDir(), func(Progress) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.SetDefaultApp("nope", nil); err == nil || !strings.Contains(err.Error(), `unknown app "nope"`) {
+		t.Fatalf("unknown id: %v", err)
+	}
+	if _, err := h.SetDefaultApp("photocraft", []string{"exe"}); err == nil || !strings.Contains(err.Error(), "does not open .exe") {
+		t.Fatalf("foreign extension: %v", err)
+	}
+	if _, err := h.SetDefaultApp("photocraft", []string{"psd"}); err == nil || !strings.Contains(err.Error(), "not installed") {
+		t.Fatalf("not installed: %v", err)
+	}
+}

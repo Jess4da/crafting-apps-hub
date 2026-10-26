@@ -124,6 +124,18 @@ export function RestartHub(): $CancellablePromise<void> {
 }
 
 /**
+ * SetDefaultApp makes the installed app the OS default handler for exactly
+ * exts (a subset of its catalog Extensions). Types no longer listed go back to
+ * the handler recorded when they were claimed; an empty exts restores all.
+ * The choice is persisted, so Install re-applies it after an update moves Exe.
+ */
+export function SetDefaultApp(id: string, exts: string[]): $CancellablePromise<hub$0.AppState> {
+    return $Call.ByID(2434198618, id, exts).then(($result: any) => {
+        return $$createType3($result);
+    });
+}
+
+/**
  * SetInstallRoot changes where new installs go. Existing installs stay put.
  */
 export function SetInstallRoot(dir: string): $CancellablePromise<hub$0.Settings> {

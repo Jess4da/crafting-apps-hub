@@ -103,6 +103,15 @@ class HubStore {
     }
   }
 
+  async setDefault(app: AppState, exts: string[]) {
+    try {
+      const s = await HubService.SetDefaultApp(app.id, exts);
+      this.apps = this.apps.map((a) => (a.id === s.id ? s : a));
+    } catch (e) {
+      toaster.error({ title: `Couldn't change default apps for ${app.name}`, description: errText(e) });
+    }
+  }
+
   async chooseInstallRoot() {
     try {
       this.settings = await HubService.ChooseInstallRoot();

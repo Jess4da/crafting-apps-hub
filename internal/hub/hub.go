@@ -31,6 +31,12 @@ type Installed struct {
 	Dir         string    `json:"dir"`
 	Exe         string    `json:"exe"`
 	InstalledAt time.Time `json:"installedAt"`
+	// DefaultExts are the Extensions the user made this app the OS handler
+	// for; Install re-applies them because updates change Exe.
+	DefaultExts []string `json:"defaultExts,omitempty"`
+	// PrevDefaults holds the handlers SetDefaultApp replaced, keyed by
+	// extension; restored on untick and Uninstall.
+	PrevDefaults map[string]string `json:"prevDefaults,omitempty"`
 }
 
 // AppState is what the UI renders for one catalog entry.
@@ -321,16 +327,31 @@ func (h *Hub) Install(ctx context.Context, id string) (AppState, error) {
 		return AppState{}, err
 	}
 	// Past this point nothing can fail and roll back, so moved settings are safe.
+	var defExts []string
+	var prevDefs map[string]string
+	if prev != nil {
+		defExts, prevDefs = prev.DefaultExts, prev.PrevDefaults
+	}
+	rec := &Installed{Version: rel.Version(), Dir: dir, Exe: exe, InstalledAt: time.Now(), DefaultExts: defExts, PrevDefaults: prevDefs}
 
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	h.releases[id] = rel
-	h.st.Installed[id] = &Installed{Version: rel.Version(), Dir: dir, Exe: exe, InstalledAt: time.Now()}
+	h.st.Installed[id] = rec
 	if err := h.saveLocked(); err != nil {
+		h.mu.Unlock()
 		return AppState{}, err
 	}
+	st := h.stateLocked(app)
+	h.mu.Unlock()
 	h.emit(Progress{ID: id, Stage: "done"})
-	return h.stateLocked(app), nil
+	// The versioned folder in every archive means Exe moved: point the OS
+	// handler at the new one. A failure keeps the successful install.
+	if len(defExts) > 0 {
+		if err := setDefaultApp(app, defExts, rec); err != nil {
+			st.Error = fmt.Sprintf("%s was updated, but could not be made the default app again: %v", app.Name, err)
+		}
+	}
+	return st, nil
 }
 
 // withSize fills in the download size of the asset this platform uses, reusing
@@ -419,10 +440,24 @@ func (h *Hub) Uninstall(id string, clean bool) (AppState, error) {
 		return AppState{}, fmt.Errorf("unknown app %q", id)
 	}
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	if h.busy[id] {
+		h.mu.Unlock()
 		return AppState{}, fmt.Errorf("%s is being installed", app.Name)
 	}
+	in := h.st.Installed[id]
+	var defExts []string
+	var prevDefs map[string]string
+	if in != nil {
+		defExts, prevDefs = in.DefaultExts, in.PrevDefaults
+	}
+	h.mu.Unlock()
+	// Hand files back to their previous apps before the executable goes away;
+	// best effort, an uninstall must not fail because of a stuck association.
+	if len(defExts) > 0 {
+		restoreDefaults(app, defExts, prevDefs)
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	if in, ok := h.st.Installed[id]; ok {
 		if err := h.removeInstall(app, in.Dir, clean); err != nil {
 			return AppState{}, fmt.Errorf("cannot remove %s (close it if it is running): %w", app.Name, err)

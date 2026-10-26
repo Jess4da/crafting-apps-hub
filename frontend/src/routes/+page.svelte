@@ -15,6 +15,8 @@
   let dark = $state(false);
   let uninstallApp = $state<AppState | null>(null);
   let cleanUninstall = $state(false);
+  let defaultsApp = $state<AppState | null>(null);
+  let defaultExts = $state<string[]>([]);
 
   const shown = $derived(
     (view === "installed" ? hub.installed : view === "updates" ? hub.updates : hub.apps).filter((a) =>
@@ -145,7 +147,7 @@
             <span class="sr-only">Search apps</span>
             <input type="search" placeholder="Search" bind:value={query} />
           </label>
-          {#if view === "updates" && hub.updates.length > 1}
+          {#if hub.updates.length}
             <button type="button" class="act act--accent" disabled={Object.keys(hub.busy).length > 0} onclick={() => hub.updateAll()}>
               Update all
             </button>
@@ -181,6 +183,11 @@
                   onUninstall={(a) => {
                     cleanUninstall = !a.installed; // leftovers-only removal is always clean
                     uninstallApp = a;
+                  }}
+                  onDefaults={(a) => {
+                    // First time: everything ticked; later: the saved choice.
+                    defaultExts = a.installed?.defaultExts?.length ? [...a.installed.defaultExts] : [...a.extensions];
+                    defaultsApp = a;
                   }}
                 />
               {/each}
@@ -263,6 +270,56 @@
               uninstallApp = null;
               if (a) hub.uninstall(a, cleanUninstall || !a.installed);
             }}>{uninstallApp?.installed ? "Uninstall" : "Delete"}</button
+          >
+        </footer>
+      </Dialog.Content>
+    </Dialog.Positioner>
+  </Portal>
+</Dialog>
+
+<!-- Default app: pick which file types open in this app -->
+<Dialog open={!!defaultsApp} onOpenChange={(e) => !e.open && (defaultsApp = null)}>
+  <Portal>
+    <Dialog.Backdrop class="sheet__backdrop" />
+    <Dialog.Positioner class="sheet__pos">
+      <Dialog.Content class="sheet">
+        <Dialog.Title class="sheet__title">Open files with {defaultsApp?.name}</Dialog.Title>
+        <Dialog.Description class="sheet__body">
+          <p>Ticked types open in {defaultsApp?.name}. Unticked ones go back to the app that opened them before.</p>
+        </Dialog.Description>
+        {#if defaultsApp}
+          {@const all = defaultsApp.extensions}
+          <label class="sheet__check">
+            <input
+              class="checkbox"
+              type="checkbox"
+              checked={defaultExts.length === all.length}
+              indeterminate={defaultExts.length > 0 && defaultExts.length < all.length}
+              onchange={(e) => (defaultExts = e.currentTarget.checked ? [...all] : [])}
+            />
+            <span>All file types</span>
+          </label>
+          <div class="sheet__exts">
+            {#each all as x (x)}
+              <label class="sheet__check">
+                <input class="checkbox" type="checkbox" value={x} bind:group={defaultExts} />
+                <code class="path">.{x}</code>
+              </label>
+            {/each}
+          </div>
+        {/if}
+        <footer class="sheet__actions">
+          <Dialog.CloseTrigger class="act act--quiet">Cancel</Dialog.CloseTrigger>
+          <button
+            type="button"
+            class="act"
+            disabled={!defaultExts.length && !defaultsApp?.installed?.defaultExts?.length}
+            onclick={() => {
+              const a = defaultsApp;
+              defaultsApp = null;
+              // Keep catalog order so the saved list is stable.
+              if (a) hub.setDefault(a, a.extensions.filter((x) => defaultExts.includes(x)));
+            }}>Save</button
           >
         </footer>
       </Dialog.Content>
@@ -620,6 +677,14 @@
     display: grid;
     gap: 0.25rem;
     margin-top: 0.5rem;
+  }
+  .sheet__exts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 0.5rem 1rem;
+    max-height: 16rem;
+    overflow-y: auto;
+    padding-left: 1.625rem;
   }
   .sheet__actions {
     display: flex;

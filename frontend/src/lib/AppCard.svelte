@@ -7,7 +7,11 @@
   import type { AppState } from "#bindings/craftinghub/internal/hub/models.ts";
   import { hub, formatBytes } from "./hub.svelte";
 
-  let { app, onUninstall }: { app: AppState; onUninstall: (a: AppState) => void } = $props();
+  let {
+    app,
+    onUninstall,
+    onDefaults,
+  }: { app: AppState; onUninstall: (a: AppState) => void; onDefaults: (a: AppState) => void } = $props();
 
   const busy = $derived(hub.busy[app.id]);
   const progress = $derived(hub.progress[app.id]);
@@ -29,7 +33,6 @@
         ? { tone: "warn", text: `No build for ${hub.platform} yet` }
         : null,
   );
-  const hasMenu = $derived(!!app.installed || app.dataDirs.length > 0 || !!app.releaseUrl);
 </script>
 
 <li class="row" aria-busy={!!busy}>
@@ -75,55 +78,48 @@
       <button type="button" class="act" disabled={!app.supported} onclick={() => hub.install(app)}>Install</button>
     {/if}
 
-    <a
-      class="more"
-      href="https://github.com/storytold/{app.repo}"
-      title="View {app.name} on GitHub"
-      aria-label="View {app.name} on GitHub"
-      onclick={(e) => (e.preventDefault(), Browser.OpenURL(e.currentTarget.href))}
+    <Menu
+      onSelect={(e) => {
+        if (e.value === "open") hub.launch(app);
+        else if (e.value === "folder") hub.openFolder(app.id);
+        else if (e.value === "default") onDefaults(app);
+        else if (e.value === "notes") Browser.OpenURL(app.releaseUrl);
+        else if (e.value === "github") Browser.OpenURL(`https://github.com/storytold/${app.repo}`);
+        else if (e.value === "remove") onUninstall(app);
+      }}
     >
-      <svg class="size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-        <path
-          d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"
-        />
-      </svg>
-    </a>
-
-    {#if hasMenu}
-      <Menu
-        onSelect={(e) => {
-          if (e.value === "open") hub.launch(app);
-          else if (e.value === "folder") hub.openFolder(app.id);
-          else if (e.value === "notes") Browser.OpenURL(app.releaseUrl);
-          else if (e.value === "remove") onUninstall(app);
-        }}
-      >
-        <Menu.Trigger class="more" aria-label="More for {app.name}" disabled={!!busy}>
-          <EllipsisIcon class="size-4" />
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content class="menu">
-              {#if app.installed && app.updateAvailable}
+      <Menu.Trigger class="more" aria-label="More for {app.name}" disabled={!!busy}>
+        <EllipsisIcon class="size-4" />
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content class="menu">
+            {#if app.installed}
+              {#if app.updateAvailable}
                 <Menu.Item value="open"><Menu.ItemText>Open v{app.installed.version}</Menu.ItemText></Menu.Item>
               {/if}
-              {#if app.installed}
-                <Menu.Item value="folder"><Menu.ItemText>Show in folder</Menu.ItemText></Menu.Item>
-              {/if}
-              {#if app.releaseUrl}
-                <Menu.Item value="notes"><Menu.ItemText>Release notes</Menu.ItemText></Menu.Item>
-              {/if}
-              {#if app.installed || app.dataDirs.length}
-                <Menu.Separator />
-                <Menu.Item value="remove" class="menu__danger">
-                  <Menu.ItemText>{app.installed ? "Uninstall…" : "Remove leftover settings…"}</Menu.ItemText>
+              <Menu.Item value="folder"><Menu.ItemText>Show in folder</Menu.ItemText></Menu.Item>
+              {#if app.extensions?.length}
+                <Menu.Item value="default">
+                  <Menu.ItemText>Default app for…</Menu.ItemText>
                 </Menu.Item>
               {/if}
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
-    {/if}
+              <Menu.Separator />
+            {/if}
+            {#if app.releaseUrl}
+              <Menu.Item value="notes"><Menu.ItemText>Release notes</Menu.ItemText></Menu.Item>
+            {/if}
+            <Menu.Item value="github"><Menu.ItemText>View on GitHub</Menu.ItemText></Menu.Item>
+            {#if app.installed || app.dataDirs.length}
+              <Menu.Separator />
+              <Menu.Item value="remove" class="menu__danger">
+                <Menu.ItemText>{app.installed ? "Uninstall…" : "Remove leftover settings…"}</Menu.ItemText>
+              </Menu.Item>
+            {/if}
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu>
   </div>
 </li>
 

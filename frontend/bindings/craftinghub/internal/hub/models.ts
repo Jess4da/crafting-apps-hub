@@ -16,6 +16,7 @@ export class AppState {
     "group": string;
     "category": string;
     "description": string;
+    "extensions": string[];
     "installed": Installed | null;
     "latestVersion": string;
     "releaseUrl": string;
@@ -56,6 +57,9 @@ export class AppState {
         if (!("description" in $$source)) {
             this["description"] = "";
         }
+        if (!("extensions" in $$source)) {
+            this["extensions"] = [];
+        }
         if (!("installed" in $$source)) {
             this["installed"] = null;
         }
@@ -88,14 +92,18 @@ export class AppState {
      * Creates a new AppState instance from a string or object.
      */
     static createFrom($$source: any = {}): AppState {
-        const $$createField7_0 = $$createType1;
-        const $$createField14_0 = $$createType2;
+        const $$createField7_0 = $$createType0;
+        const $$createField8_0 = $$createType2;
+        const $$createField15_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("extensions" in $$parsedSource) {
+            $$parsedSource["extensions"] = $$createField7_0($$parsedSource["extensions"]);
+        }
         if ("installed" in $$parsedSource) {
-            $$parsedSource["installed"] = $$createField7_0($$parsedSource["installed"]);
+            $$parsedSource["installed"] = $$createField8_0($$parsedSource["installed"]);
         }
         if ("dataDirs" in $$parsedSource) {
-            $$parsedSource["dataDirs"] = $$createField14_0($$parsedSource["dataDirs"]);
+            $$parsedSource["dataDirs"] = $$createField15_0($$parsedSource["dataDirs"]);
         }
         return new AppState($$parsedSource as Partial<AppState>);
     }
@@ -109,6 +117,18 @@ export class Installed {
     "dir": string;
     "exe": string;
     "installedAt": Date;
+
+    /**
+     * DefaultExts are the Extensions the user made this app the OS handler
+     * for; Install re-applies them because updates change Exe.
+     */
+    "defaultExts"?: string[];
+
+    /**
+     * PrevDefaults holds the handlers SetDefaultApp replaced (keyed by
+     * extension, or MIME type on Linux), restored on untick and Uninstall.
+     */
+    "prevDefaults"?: { [_ in string]?: string };
 
     /** Creates a new Installed instance. */
     constructor($$source: Partial<Installed> = {}) {
@@ -133,9 +153,17 @@ export class Installed {
      */
     static createFrom($$source: any = {}): Installed {
         const $$createField3_0 = $Create.DateFromTime;
+        const $$createField4_0 = $$createType0;
+        const $$createField5_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("installedAt" in $$parsedSource) {
             $$parsedSource["installedAt"] = $$createField3_0($$parsedSource["installedAt"]);
+        }
+        if ("defaultExts" in $$parsedSource) {
+            $$parsedSource["defaultExts"] = $$createField4_0($$parsedSource["defaultExts"]);
+        }
+        if ("prevDefaults" in $$parsedSource) {
+            $$parsedSource["prevDefaults"] = $$createField5_0($$parsedSource["prevDefaults"]);
         }
         return new Installed($$parsedSource as Partial<Installed>);
     }
@@ -203,6 +231,7 @@ export class Settings {
 }
 
 // Private type creation functions
-const $$createType0 = Installed.createFrom;
-const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = $Create.Array($Create.Any);
+const $$createType0 = $Create.Array($Create.Any);
+const $$createType1 = Installed.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = $Create.Map($Create.Any, $Create.Any);
