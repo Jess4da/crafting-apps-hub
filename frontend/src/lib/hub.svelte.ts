@@ -70,8 +70,12 @@ class HubStore {
   }
 
   async updateAll() {
-    // Sequential: keeps bandwidth sane and progress readable.
-    for (const a of this.updates) await this.install(a);
+    // Up to 5 in parallel: backend locks per app id; each row shows its own progress.
+    const queue = [...this.updates];
+    const worker = async () => {
+      for (let a; (a = queue.shift()); ) await this.install(a);
+    };
+    await Promise.all(Array.from({ length: 5 }, worker));
   }
 
   async uninstall(app: AppState, clean: boolean) {

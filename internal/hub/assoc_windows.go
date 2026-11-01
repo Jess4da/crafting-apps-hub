@@ -4,6 +4,7 @@ package hub
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/sys/windows"
@@ -12,21 +13,39 @@ import (
 
 const progIDPrefix = "CraftingApps."
 
+// capsKey is where the app's Capabilities live; RegisteredApplications points
+// at it so Settings > Default apps knows the app by name.
+func capsKey(app App) string { return `Software\CraftingApps\` + app.ID + `\Capabilities` }
+
 func setDefaultApp(app App, exts []string, in *Installed) error {
 	progID := progIDPrefix + app.ID
 	base := `Software\Classes\` + progID
-	if err := setString(registry.CURRENT_USER, base, "", app.Name); err != nil {
-		return err
-	}
-	if err := setString(registry.CURRENT_USER, base+`\DefaultIcon`, "", `"`+in.Exe+`",0`); err != nil {
-		return err
-	}
-	if err := setString(registry.CURRENT_USER, base+`\shell\open\command`, "", `"`+in.Exe+`" "%1"`); err != nil {
-		return err
+	icon := `"` + in.Exe + `",0`
+	// Without a FriendlyAppName/ApplicationName and a registered app, Windows
+	// shows the association as "Unknown application".
+	for _, v := range [][3]string{
+		{base, "", app.Name},
+		{base, "FriendlyTypeName", app.Name + " document"},
+		{base + `\DefaultIcon`, "", icon},
+		{base + `\Application`, "ApplicationName", app.Name},
+		{base + `\Application`, "ApplicationIcon", icon},
+		{base + `\shell\open`, "FriendlyAppName", app.Name},
+		{base + `\shell\open\command`, "", `"` + in.Exe + `" "%1"`},
+		{`Software\Classes\Applications\` + filepath.Base(in.Exe), "FriendlyAppName", app.Name},
+		{capsKey(app), "ApplicationName", app.Name},
+		{capsKey(app), "ApplicationIcon", icon},
+		{`Software\RegisteredApplications`, "CraftingApps." + app.ID, capsKey(app)},
+	} {
+		if err := setString(registry.CURRENT_USER, v[0], v[1], v[2]); err != nil {
+			return err
+		}
 	}
 	for _, ext := range exts {
 		key := `Software\Classes\.` + ext
 		if err := setString(registry.CURRENT_USER, key, "", progID); err != nil {
+			return fmt.Errorf("%s: %w", ext, err)
+		}
+		if err := setString(registry.CURRENT_USER, capsKey(app)+`\FileAssociations`, "."+ext, progID); err != nil {
 			return fmt.Errorf("%s: %w", ext, err)
 		}
 		ow, _, err := registry.CreateKey(registry.CURRENT_USER, key+`\OpenWithProgids`, registry.SET_VALUE)
@@ -88,8 +107,13 @@ func restoreDefaults(app App, exts []string, prev map[string]string) error {
 		}
 	}
 	base := `Software\Classes\` + progID
-	for _, k := range []string{base + `\DefaultIcon`, base + `\shell\open\command`, base + `\shell\open`, base + `\shell`, base} {
+	for _, k := range []string{base + `\DefaultIcon`, base + `\Application`, base + `\shell\open\command`, base + `\shell\open`, base + `\shell`, base,
+		capsKey(app) + `\FileAssociations`, capsKey(app), `Software\CraftingApps\` + app.ID} {
 		registry.DeleteKey(registry.CURRENT_USER, k)
+	}
+	if k, err := registry.OpenKey(registry.CURRENT_USER, `Software\RegisteredApplications`, registry.SET_VALUE); err == nil {
+		k.DeleteValue("CraftingApps." + app.ID)
+		k.Close()
 	}
 	notifyShell()
 	return nil
