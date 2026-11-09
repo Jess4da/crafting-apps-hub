@@ -22,8 +22,8 @@ type Asset struct {
 
 // Release is what the hub knows about a repo's latest release. It is built
 // from github.com web endpoints only (no REST API, so no 60/h rate limit):
-// the /releases/latest redirect gives the tag, and the release's
-// SHA256SUMS.txt lists every asset together with its checksum.
+// the /releases/latest/download/SHA256SUMS.txt redirect gives the tag, and
+// that file lists every asset together with its checksum.
 type Release struct {
 	Tag     string
 	HTMLURL string
@@ -39,7 +39,7 @@ const sumsAsset = "SHA256SUMS.txt"
 // ghBase is a var so tests can point it at httptest.
 var ghBase = "https://github.com"
 
-// noRedirect reads the /releases/latest redirect instead of following it.
+// noRedirect reads the latest-download redirect instead of following it.
 var noRedirect = &http.Client{
 	Timeout:       30 * time.Second,
 	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
@@ -49,20 +49,27 @@ var webClient = &http.Client{Timeout: 30 * time.Second}
 
 func latestRelease(ctx context.Context, owner, repo string) (Release, error) {
 	base := fmt.Sprintf("%s/%s/%s/releases", ghBase, owner, repo)
-	res, err := get(ctx, noRedirect, http.MethodGet, base+"/latest")
+	// Not /releases/latest: that HTML route 504s for anonymous clients
+	// during GitHub load spikes while the download route keeps working.
+	res, err := get(ctx, noRedirect, http.MethodGet, base+"/latest/download/"+sumsAsset)
 	if err != nil {
 		return Release{}, err
 	}
 	res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		// No release, or one without checksums: refuse rather than install something unchecked.
+		return Release{}, fmt.Errorf("%s: no published release with %s", repo, sumsAsset)
+	}
 	if res.StatusCode != http.StatusFound && res.StatusCode != http.StatusMovedPermanently {
-		return Release{}, fmt.Errorf("%s: no published release (%s)", repo, res.Status)
+		return Release{}, fmt.Errorf("%s: GitHub did not answer (%s); try again later", repo, res.Status)
 	}
 	loc, err := res.Location()
 	if err != nil {
 		return Release{}, fmt.Errorf("%s: %w", repo, err)
 	}
-	_, tag, ok := strings.Cut(loc.Path, "/releases/tag/")
-	if !ok || tag == "" {
+	_, rest, _ := strings.Cut(loc.EscapedPath(), "/releases/download/")
+	tag, file, _ := strings.Cut(rest, "/")
+	if tag == "" || file != sumsAsset {
 		return Release{}, fmt.Errorf("%s: unexpected latest-release redirect %s", repo, loc)
 	}
 	if tag, err = url.PathUnescape(tag); err != nil {
@@ -76,8 +83,7 @@ func latestRelease(ctx context.Context, owner, repo string) (Release, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		// Refuse unverifiable releases rather than install something unchecked.
-		return Release{}, fmt.Errorf("%s %s has no %s (%s)", repo, tag, sumsAsset, res.Status)
+		return Release{}, fmt.Errorf("%s %s: %s unavailable (%s)", repo, tag, sumsAsset, res.Status)
 	}
 	rel := Release{Tag: tag, HTMLURL: base + "/tag/" + url.PathEscape(tag), Sums: parseSums(io.LimitReader(res.Body, 1<<20))}
 	for name := range rel.Sums {
@@ -94,6 +100,9 @@ func assetSize(ctx context.Context, a Asset) int64 {
 		return 0
 	}
 	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return 0
+	}
 	return max(res.ContentLength, 0)
 }
 

@@ -126,7 +126,7 @@ func fakeGitHub(t *testing.T, version string, zipBytes []byte, sum string) *fake
 type fakeGH struct{ heads, sums atomic.Int32 }
 
 // fakeRelease mimics the github.com web endpoints the hub uses: the
-// /releases/latest redirect, SHA256SUMS.txt and the asset (GET and HEAD).
+// /releases/latest/download redirect, SHA256SUMS.txt and the asset (GET and HEAD).
 func fakeRelease(t *testing.T, repo, prefix, version string, zipBytes []byte, sum string) *fakeGH {
 	t.Helper()
 	asset := fmt.Sprintf("%s-%s-windows-x64-portable.zip", prefix, version)
@@ -139,8 +139,8 @@ func fakeRelease(t *testing.T, repo, prefix, version string, zipBytes []byte, su
 	dl := base + "/download/v" + version + "/"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case base + "/latest":
-			http.Redirect(w, r, base+"/tag/v"+version, http.StatusFound)
+		case base + "/latest/download/" + sumsAsset:
+			http.Redirect(w, r, dl+sumsAsset, http.StatusFound)
 		case dl + sumsAsset:
 			f.sums.Add(1)
 			fmt.Fprintf(w, "%s  %s\n%s  other-file.zip\n", sum, asset, strings.Repeat("a", 64))
@@ -446,13 +446,8 @@ func TestRefreshFromWebEndpoints(t *testing.T) {
 }
 
 func TestReleaseWithoutChecksumsIsRefused(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/releases/latest") {
-			http.Redirect(w, r, "/storytold/pdfcraft/releases/tag/v1.0.0", http.StatusFound)
-			return
-		}
-		http.NotFound(w, r)
-	}))
+	// GitHub answers 404 on /releases/latest/download/<name> when the latest release lacks the file.
+	srv := httptest.NewServer(http.NotFoundHandler())
 	defer srv.Close()
 	old := ghBase
 	ghBase = srv.URL
@@ -474,8 +469,8 @@ func TestCheckSelfUpdate(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		base := "/" + selfOwner + "/" + selfRepo + "/releases"
 		switch r.URL.Path {
-		case base + "/latest":
-			http.Redirect(w, r, base+"/tag/v0.3.0", http.StatusFound)
+		case base + "/latest/download/" + sumsAsset:
+			http.Redirect(w, r, base+"/download/v0.3.0/"+sumsAsset, http.StatusFound)
 		case base + "/download/v0.3.0/" + sumsAsset:
 			for _, s := range []string{"windows-x64.zip", "macos-universal.zip", "linux-x64.tar.gz"} {
 				fmt.Fprintf(w, "%s  crafting-apps-hub-v0.3.0-%s\n", strings.Repeat("a", 64), s)
