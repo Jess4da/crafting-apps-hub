@@ -449,7 +449,14 @@
     color: var(--color-muted);
     transition: background-color var(--dur-short) var(--ease-out);
   }
+  /* A text field shows where typing goes: brighten the glass rim instead of an offset ring. */
   .search:focus-within {
+    box-shadow:
+      0 0 0 1px var(--color-focus),
+      0 1.5rem 3rem -1.5rem var(--glass-shadow),
+      inset 0 1px 0 var(--glass-inner);
+  }
+  :global(html[data-kbd]) .search:focus-within {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }

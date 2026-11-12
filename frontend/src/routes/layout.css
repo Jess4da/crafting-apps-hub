@@ -93,9 +93,19 @@ html.os-glass body {
 	background: transparent;
 }
 
+/* Rings only after keyboard navigation (html[data-kbd], set in app.html):
+ * menus and dialogs move focus by script, which Chromium otherwise rings after
+ * a mouse click. */
 :focus-visible {
+	outline: none;
+}
+html[data-kbd] :focus-visible {
 	outline: 2px solid var(--color-focus);
 	outline-offset: 2px;
+}
+/* The open menu itself takes focus; its highlighted item already shows where you are. */
+html[data-kbd] .menu:focus-visible {
+	outline: none;
 }
 
 /* Glass surfaces: translucent fill, 0.5 px rim, soft shadow, inner highlight. */

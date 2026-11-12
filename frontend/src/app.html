@@ -12,6 +12,11 @@
       // macOS overlays the traffic lights on the hidden title bar; the narrow
       // rail reserves room for them.
       if (navigator.userAgent.includes("Mac")) document.documentElement.classList.add("mac");
+      // Focus rings only after keyboard navigation (see layout.css): menus move
+      // focus by script, which Chromium otherwise rings after a mouse click.
+      const root = document.documentElement;
+      addEventListener("keydown", (e) => { if (e.key === "Tab" || e.key.startsWith("Arrow")) root.dataset.kbd = ""; }, true);
+      addEventListener("pointerdown", () => delete root.dataset.kbd, true);
     </script>
     %sveltekit.head%
   </head>
