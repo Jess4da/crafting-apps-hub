@@ -55,7 +55,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
+	// OS glass: the window itself is frosted by the OS (Windows 11 Acrylic,
+	// macOS vibrancy), and the frontend renders the chrome on top of it. Every
+	// other case paints the solid fallback surface.
+	opts := application.WebviewWindowOptions{
 		Title:     "Crafting Apps Hub",
 		Width:     1180,
 		Height:    760,
@@ -68,7 +71,17 @@ func main() {
 		},
 		BackgroundColour: application.NewRGB(18, 18, 22),
 		URL:              "/",
-	})
+	}
+	if osGlass() {
+		opts.URL = "/?glass=1"
+		opts.BackgroundType = application.BackgroundTypeTranslucent
+		opts.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
+		opts.Windows = application.WindowsWindow{
+			BackdropType: application.Acrylic,
+			Theme:        application.SystemDefault,
+		}
+	}
+	app.Window.NewWithOptions(opts)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

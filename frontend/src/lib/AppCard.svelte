@@ -1,5 +1,5 @@
 <script lang="ts">
-  /* Hallmark · catalogue row (Index-First) · tokens from routes/atelier.css + layout.css */
+  /* Hallmark · catalogue row · tokens from routes/layout.css only */
   import { Menu, Portal, Progress } from "@skeletonlabs/skeleton-svelte";
   import { Browser } from "@wailsio/runtime";
   import EllipsisIcon from "@lucide/svelte/icons/ellipsis";
@@ -135,18 +135,17 @@
   .row__icon {
     width: 3.5rem;
     height: 3.5rem;
-    border-radius: 0.625rem;
+    border-radius: 0.875rem;
   }
   .row__text {
     min-width: 0;
   }
   .row__name {
-    font-family: var(--font-display);
-    font-size: 1.375rem;
+    font-family: var(--font-body);
+    font-size: 1.125rem;
     font-weight: 600;
-    font-variation-settings: "opsz" 48;
     letter-spacing: -0.01em;
-    line-height: 1.15;
+    line-height: 1.2;
     color: var(--color-ink);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -177,7 +176,7 @@
   }
   :global(.row__track) {
     height: 0.25rem;
-    background: var(--color-rule);
+    background: var(--glass-fill);
   }
   :global(.row__range) {
     background: var(--color-progress);
@@ -221,7 +220,7 @@
       display: none;
     }
     .row__name {
-      font-size: 1.125rem;
+      font-size: 1rem;
     }
     .row__actions :global(.act) {
       min-width: 0;

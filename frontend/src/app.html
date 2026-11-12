@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="atelier">
+<html lang="en" data-theme="glass">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/icons/photocraft.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crafting Apps Hub</title>
     <script>
-      // Paper (light) is the default; apply a saved dark preference before paint.
-      if (localStorage.getItem("mode") === "dark") document.documentElement.classList.add("dark");
+      // The Go side loads /?glass=1 only when the OS window material exists.
+      // Mark it before paint so the window never flashes the fallback surface.
+      if (new URLSearchParams(location.search).has("glass")) document.documentElement.classList.add("os-glass");
+      // macOS overlays the traffic lights on the hidden title bar; the narrow
+      // rail reserves room for them.
+      if (navigator.userAgent.includes("Mac")) document.documentElement.classList.add("mac");
     </script>
     %sveltekit.head%
   </head>

@@ -1,6 +1,6 @@
 <script lang="ts">
-  /* Hallmark · genre: editorial · macrostructure: Index-First · nav: N9 rail · footer: Ft2 inline
-   * Styles here reference tokens from routes/layout.css + routes/atelier.css only. */
+  /* Hallmark · genre: liquid glass · chrome floats on the OS material (rail, strip, search, footer).
+   * Styles here reference tokens from routes/layout.css only. */
   import { onMount } from "svelte";
   import { Dialog, Portal } from "@skeletonlabs/skeleton-svelte";
   import { Browser } from "@wailsio/runtime";
@@ -12,7 +12,6 @@
   type View = "all" | "installed" | "updates" | "settings";
   let view = $state<View>("all");
   let query = $state("");
-  let dark = $state(false);
   let uninstallApp = $state<AppState | null>(null);
   let cleanUninstall = $state(false);
   let defaultsApp = $state<AppState | null>(null);
@@ -54,19 +53,12 @@
   });
 
   onMount(() => {
-    dark = document.documentElement.classList.contains("dark");
     hub.init();
   });
-
-  function toggleMode() {
-    dark = !dark;
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("mode", dark ? "dark" : "light");
-  }
 </script>
 
 <div class="shell">
-  <nav class="rail" aria-label="Library">
+  <nav class="rail glass" aria-label="Library">
     <p class="wordmark">Craft<span>Hub</span></p>
     <div class="rail__strip">
     <ul class="rail__list">
@@ -88,11 +80,6 @@
       <li>
         <button type="button" class="rail__link" aria-current={view === "settings" ? "page" : undefined} onclick={() => (view = "settings")}>
           Settings
-        </button>
-      </li>
-      <li>
-        <button type="button" class="rail__link rail__mode" onclick={toggleMode} aria-pressed={dark}>
-          {dark ? "Paper" : "Ink"} mode
         </button>
       </li>
     </ul>
@@ -142,7 +129,7 @@
           {/if}
         </div>
         <div class="head__tools">
-          <label class="search">
+          <label class="search glass">
             <SearchIcon class="size-4" aria-hidden="true" />
             <span class="sr-only">Search apps</span>
             <input type="search" placeholder="Search" bind:value={query} />
@@ -208,7 +195,7 @@
       {/if}
     {/if}
 
-    <footer class="foot" hidden={hub.loading}>
+    <footer class="foot glass" hidden={hub.loading}>
       <span>Installs to <code class="path path--inline">{hub.settings.installRoot}</code></span>
       <span class="foot__right">
         {#if hub.hubUpdate}
@@ -238,7 +225,7 @@
   <Portal>
     <Dialog.Backdrop class="sheet__backdrop" />
     <Dialog.Positioner class="sheet__pos">
-      <Dialog.Content class="sheet">
+      <Dialog.Content class="sheet glass--float">
         <Dialog.Title class="sheet__title">
           {uninstallApp?.installed ? `Uninstall ${uninstallApp.name}?` : `Remove ${uninstallApp?.name} settings?`}
         </Dialog.Title>
@@ -282,7 +269,7 @@
   <Portal>
     <Dialog.Backdrop class="sheet__backdrop" />
     <Dialog.Positioner class="sheet__pos">
-      <Dialog.Content class="sheet">
+      <Dialog.Content class="sheet glass--float">
         <Dialog.Title class="sheet__title">Open files with {defaultsApp?.name}</Dialog.Title>
         <Dialog.Description class="sheet__body">
           <p>Ticked types open in {defaultsApp?.name}. Unticked ones go back to the app that opened them before.</p>
@@ -328,33 +315,38 @@
 </Dialog>
 
 <style>
+  /* The window is the backdrop: chrome floats 8px inside its edges. */
   .shell {
     display: grid;
     grid-template-columns: 13rem minmax(0, 1fr);
+    gap: 0.5rem;
     min-height: 100dvh;
+    padding: 0.5rem;
   }
 
-  /* N9 · edge-aligned rail: wordmark + plain text filters, no icons, no fills. */
+  /* Rail: a floating glass panel, inset from the window edges. */
   .rail {
     position: sticky;
-    top: 0;
-    height: 100dvh;
+    top: 0.5rem;
+    height: calc(100dvh - 1rem);
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
-    padding: 2rem 1.25rem 1.5rem 1.75rem;
-    border-right: 1px solid var(--color-rule);
+    gap: 2rem;
+    padding: 1.5rem 1rem;
+    border-radius: 1.375rem;
+    overflow-y: auto;
   }
   .wordmark {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 700;
-    font-variation-settings: "opsz" 72, "SOFT" 50;
+    padding-inline: 0.75rem;
+    font-family: var(--font-body);
+    font-size: 1.25rem;
+    font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--color-ink);
   }
   .wordmark span {
-    font-weight: 300;
+    font-weight: 400;
+    color: var(--color-muted);
   }
   .rail__list {
     display: grid;
@@ -370,25 +362,23 @@
   }
   .rail__link {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
     width: 100%;
-    padding: 0.4375rem 0.5rem;
-    margin-inline: -0.5rem;
-    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
     color: var(--color-muted);
     text-align: left;
     white-space: nowrap;
-    transition: color var(--dur-short) var(--ease-out);
+    transition:
+      background-color var(--dur-short) var(--ease-out),
+      color var(--dur-short) var(--ease-out);
   }
   .rail__link[aria-current="page"] {
+    background-image: linear-gradient(var(--glass-hover), var(--glass-hover));
     color: var(--color-ink);
     font-weight: 600;
-    text-decoration: underline;
-    text-decoration-color: var(--color-accent);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.35em;
   }
   @media (hover: hover) {
     .rail__link:hover {
@@ -409,29 +399,30 @@
   .page {
     display: flex;
     flex-direction: column;
+    gap: 2rem;
     min-width: 0;
-    padding: 2.5rem clamp(1.25rem, 4vw, 4rem) 1.5rem;
+    min-height: calc(100dvh - 1rem);
+    padding: 2rem clamp(1.25rem, 4vw, 3.5rem) 1.5rem;
+    border-radius: 1.375rem;
   }
 
-  /* Index-First header: title + count line on the left, tools hard right. */
+  /* Header: title + count line left, glass tools right. */
   .head {
     display: flex;
     flex-wrap: wrap;
     align-items: end;
     justify-content: space-between;
     gap: 1.5rem;
-    padding-bottom: 1.5rem;
   }
   .head__text {
     min-width: 0;
   }
   .head__title {
-    font-family: var(--font-display);
-    font-size: clamp(2rem, 2.5vw + 1rem, 3rem);
+    font-family: var(--font-body);
+    font-size: clamp(1.75rem, 2vw + 1rem, 2.5rem);
     font-weight: 600;
-    font-variation-settings: "opsz" 144;
-    letter-spacing: -0.025em;
-    line-height: 1.05;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
     color: var(--color-ink);
     overflow-wrap: anywhere;
   }
@@ -442,30 +433,33 @@
   }
   .head__tools {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0;
   }
   .search {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0;
     height: 2.5rem;
     padding-inline: 0.875rem;
-    border: 1px solid var(--color-rule-2);
     border-radius: 999px;
     color: var(--color-muted);
     transition: background-color var(--dur-short) var(--ease-out);
   }
   .search:focus-within {
     outline: 2px solid var(--color-focus);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
   @media (hover: hover) {
     .search:hover {
-      background: var(--color-paper-2);
+      background-image: linear-gradient(var(--glass-hover), var(--glass-hover));
     }
   }
   .search input {
+    min-width: 0;
     width: 9rem;
     background: transparent;
     border: 0;
@@ -493,7 +487,7 @@
   .ghost__icon {
     width: 3.5rem;
     height: 3.5rem;
-    border-radius: 0.625rem;
+    border-radius: 0.875rem;
   }
   .ghost__text {
     display: grid;
@@ -522,16 +516,13 @@
       width: 4.5rem;
     }
   }
-  .group + .group {
-    margin-top: 2.5rem;
-  }
   .group__title {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
     padding-bottom: 0.625rem;
-    font-family: var(--font-display);
-    font-size: 1.125rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
     font-weight: 600;
     color: var(--color-ink);
   }
@@ -550,9 +541,9 @@
     border-top: 1px solid var(--color-rule);
   }
   .empty__title {
-    font-family: var(--font-display);
+    font-family: var(--font-body);
     font-size: 1.5rem;
-    font-weight: 400;
+    font-weight: 600;
     color: var(--color-ink);
   }
 
@@ -564,8 +555,8 @@
     border-top: 1px solid var(--color-rule);
   }
   .setting__name {
-    font-family: var(--font-display);
-    font-size: 1.375rem;
+    font-family: var(--font-body);
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--color-ink);
   }
@@ -584,8 +575,8 @@
   .path {
     display: block;
     padding: 0.375rem 0.625rem;
-    border-radius: 0.25rem;
-    background: var(--color-paper-2);
+    border-radius: 0.375rem;
+    background: var(--glass-fill);
     color: var(--color-ink);
     font-family: var(--font-mono);
     font-size: 0.8125rem;
@@ -597,16 +588,21 @@
     padding: 0.0625rem 0.3125rem;
   }
 
-  /* Ft2 · one quiet line closing the page. */
+  /* Footer: one quiet glass bar closing the page. */
   .foot {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
     gap: 0.5rem 1.5rem;
     margin-top: auto;
-    padding-top: 3rem;
+    padding: 0.625rem 1rem;
+    border-radius: 1.125rem;
     color: var(--color-muted);
     font-size: 0.8125rem;
+  }
+  .foot[hidden] {
+    display: none;
   }
   .foot__ver {
     font-family: var(--font-mono);
@@ -624,7 +620,7 @@
     color: var(--color-accent);
   }
 
-  /* Dialog: a paper sheet, not a floating card. */
+  /* Dialog: a floating glass sheet over a scrim. The sheet blurs; the scrim never does. */
   :global(.sheet__backdrop) {
     position: fixed;
     inset: 0;
@@ -644,18 +640,15 @@
     gap: 1.25rem;
     width: min(100%, 30rem);
     padding: 1.75rem;
-    border: 1px solid var(--color-rule-2);
-    border-radius: 0.5rem;
-    background: var(--color-paper);
+    border-radius: 1.75rem;
     color: var(--color-ink);
-    box-shadow: 0 1px 2px var(--color-shadow);
   }
   :global(.sheet__title) {
-    font-family: var(--font-display);
-    font-size: 1.625rem;
+    font-family: var(--font-body);
+    font-size: 1.375rem;
     font-weight: 600;
     letter-spacing: -0.015em;
-    line-height: 1.15;
+    line-height: 1.2;
   }
   :global(.sheet__body) {
     display: grid;
@@ -671,7 +664,7 @@
   }
   .sheet__check input {
     margin-top: 0.1875rem;
-    accent-color: var(--color-accent);
+    accent-color: var(--color-accent-fill);
   }
   .sheet__paths {
     display: grid;
@@ -691,62 +684,59 @@
     justify-content: flex-end;
     gap: 0.5rem;
   }
-  :global(.act--danger) {
-    border-color: var(--color-danger-fill);
-    background: var(--color-danger-fill);
-    color: var(--color-danger-ink);
-  }
-  @media (hover: hover) {
-    :global(.act--danger:hover) {
-      background: var(--color-ink);
-      border-color: var(--color-ink);
-    }
-  }
 
-  /* Narrow: rail becomes a top strip; filters stay one line. */
+  /* Narrow: the rail becomes one horizontal glass pill bar; filters scroll, never wrap. */
   @media (max-width: 48rem) {
     .shell {
       grid-template-columns: minmax(0, 1fr);
     }
     .rail {
-      position: static;
       height: auto;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.75rem;
-      padding: 1rem 1.25rem 0;
-      border-right: 0;
-      border-bottom: 1px solid var(--color-rule);
+      flex-direction: row;
+      align-items: center;
+      gap: 0;
+      padding: 0.375rem 0.5rem;
+      overflow: hidden;
+      /* Sticky over scrolled rows: a strong fill plus blur keeps the muted
+       * labels legible. The rail is not inside another blurred surface. */
+      background: var(--glass-fill-strong);
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      backdrop-filter: blur(var(--glass-blur));
+      z-index: 1;
     }
-    /* One scrollable strip of filters + Settings: never wraps to a lonely row. */
+    /* macOS draws the traffic lights over the hidden title bar (50 px); keep
+     * the rail's content clear of them. */
+    :global(html.mac) .rail {
+      padding-top: 2.75rem;
+    }
+    .wordmark {
+      display: none;
+    }
+    .rail__strip {
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      overflow-x: auto;
+      scrollbar-width: none;
+      /* Room for :focus-visible outlines, which overflow would clip. */
+      padding: 4px;
+    }
     .rail__list,
     .rail__foot {
       display: contents;
-    }
-    .rail__strip {
-      flex-direction: row;
-      align-items: baseline;
-      gap: 1.25rem;
-      overflow-x: auto;
-      scrollbar-width: none;
-      padding-bottom: 0.75rem;
     }
     .rail__strip li {
       flex: none;
     }
     .rail__link {
       width: auto;
-      margin-inline: 0;
-      padding-inline: 0;
-    }
-    .rail__mode {
-      display: none;
+      padding-inline: 0.75rem;
     }
     .head__tools {
       width: 100%;
     }
     .search {
-      flex: 1;
+      flex: 1 1 10rem;
     }
     .search input {
       width: 100%;

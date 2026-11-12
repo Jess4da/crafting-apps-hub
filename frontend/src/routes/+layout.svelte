@@ -10,7 +10,7 @@
 
 <Toast.Group {toaster}>
   {#snippet children(toast)}
-    <Toast {toast} class="note">
+    <Toast {toast} class="glass--float note">
       <Toast.Message>
         <Toast.Title class="note__title">{toast.title}</Toast.Title>
         <Toast.Description class="note__body">{toast.description}</Toast.Description>
@@ -21,13 +21,14 @@
 </Toast.Group>
 
 <style>
-  /* Toasts only report failures: paper sheet, danger hairline, no fill. */
-  :global(.note) {
-    border: 1px solid var(--color-danger);
-    border-radius: 0.5rem;
-    background: var(--color-paper);
+  /* Toasts only report failures: floating glass with a danger ring, no border. */
+  :global(.glass--float.note) {
+    border-radius: 18px;
     color: var(--color-ink);
-    box-shadow: 0 1px 2px var(--color-shadow);
+    box-shadow:
+      0 0 0 1px var(--color-danger),
+      0 1.5rem 3rem -1.5rem var(--glass-shadow),
+      inset 0 1px 0 var(--glass-inner);
   }
   :global(.note__title) {
     font-weight: 600;
